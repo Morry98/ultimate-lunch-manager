@@ -1,0 +1,6 @@
+flake8
+mypy
+mypy-extensions
+coverage
+pytest
+pip-tools

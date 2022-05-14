@@ -1,0 +1,13 @@
+[flake8]
+extend-ignore = PD005
+                PD006
+                PD011
+inline-quotes = "
+multiline-quotes = """
+docstring-quotes = """
+avoid-escape = False
+max-complexity = 12
+max-line-length = 120
+import-order-style = pycharm
+statistics = True
+per-file-ignores = __init__.py:F401
