@@ -8,8 +8,6 @@
                                                                                                                      __/ |          
                                                                                                                     |___/
 
-### This is an alpha version
-
 ![GitHub](https://img.shields.io/github/license/morry98/ultimate-lunch-manager)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/morry98/ultimate-lunch-manager)
 ![GitHub top language](https://img.shields.io/github/languages/top/morry98/ultimate-lunch-manager)
@@ -47,11 +45,31 @@ You need only to book the place it writes and then press the booked button, if t
 booking problems. In case of booking problems it will automatically change the place, if it's possible.
 
 
-## Quickstart
-Tested only on python 3.10, it doesn't work with lower versions.
+# Quickstart
+Tested only on python 3.10, it probably works with lower versions.
 
-## Usage
 
-Set the slack token in the config, run ```python main.py``` and Enjoy!  
-You can go in a channel and add the bot, it will start asking you some configurations, 
-then it will become your lunch manager.
+## Installation
+
+Todo
+
+## Create slack bot
+
+Todo
+
+## Slack permissions
+
+Todo
+
+## Get Slack token
+
+Todo
+
+## Start Python bot
+
+Set the slack token in the config, run ```python main.py``` and Enjoy!
+
+# Usage
+
+Todo
+
