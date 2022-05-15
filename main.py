@@ -276,13 +276,13 @@ def handle_delete_time(ack, body, client):
             if time == "":
                 continue
             options.append({
-                    "text": {
-                        "type": "plain_text",
-                        "text": time,
-                        "emoji": True
-                    },
-                    "value": time
-                }
+                "text": {
+                    "type": "plain_text",
+                    "text": time,
+                    "emoji": True
+                },
+                "value": time
+            }
             )
         requests.post(
             url=body["response_url"],
