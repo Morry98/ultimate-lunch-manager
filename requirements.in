@@ -1,5 +1,4 @@
 loguru
 python-dotenv
-pyjokes
 slack-bolt
 requests

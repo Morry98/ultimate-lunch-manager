@@ -8,8 +8,6 @@ idna==3.3
     # via requests
 loguru==0.6.0
     # via -r requirements.in
-pyjokes==0.6.0
-    # via -r requirements.in
 python-dotenv==0.20.0
     # via -r requirements.in
 requests==2.27.1
