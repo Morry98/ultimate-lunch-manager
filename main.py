@@ -25,9 +25,10 @@ POSSIBLE_TIME = []
 SELECTED_TIME_TO_ADD = {}  # {user: time}
 SELECTED_TIME_TO_DELETE = {}  # {user: time}
 TIMES = ["", "12:00"]
+RESTAURANTS = ["", "Nonna"]
 
 
-def create_config_message():
+def create_times_config_message():
     time_list = "\n- ".join(TIMES)
     return [
         {
@@ -52,7 +53,7 @@ def create_config_message():
                     "type": "button",
                     "text": {
                         "type": "plain_text",
-                        "text": "Add new value",
+                        "text": "Add new time",
                         "emoji": True
                     },
                     "value": "time_config",
@@ -62,7 +63,7 @@ def create_config_message():
                     "type": "button",
                     "text": {
                         "type": "plain_text",
-                        "text": "Delete a value",
+                        "text": "Delete a time",
                         "emoji": True
                     },
                     "value": "time_config",
@@ -72,12 +73,12 @@ def create_config_message():
                     "type": "button",
                     "text": {
                         "type": "plain_text",
-                        "text": "Confirm values",
+                        "text": "Confirm times",
                         "emoji": True
                     },
                     "style": "primary",
                     "value": "time_config",
-                    "action_id": "confirm"
+                    "action_id": "confirm_times"
                 },
                 {
                     "type": "button",
@@ -88,7 +89,75 @@ def create_config_message():
                     },
                     "style": "danger",
                     "value": "time_config",
-                    "action_id": "delete_all"
+                    "action_id": "delete_all_times"
+                }
+            ]
+        }
+    ]
+
+
+def create_restaurant_config_message():
+    restaurant_list = "\n- ".join(RESTAURANTS)
+    return [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": "Configurations :gear:",
+                "emoji": True
+            }
+        },
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"*These are the restaurant already entered:*{restaurant_list}"
+            }
+        },
+        {
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Add new restaurant",
+                        "emoji": True
+                    },
+                    "value": "restaurant_config",
+                    "action_id": "add_new_restaurant"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Delete a restaurant",
+                        "emoji": True
+                    },
+                    "value": "restaurant_config",
+                    "action_id": "delete_restaurant"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Confirm restaurants",
+                        "emoji": True
+                    },
+                    "style": "primary",
+                    "value": "restaurant_config",
+                    "action_id": "confirm_restaurants"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Delete all",
+                        "emoji": True
+                    },
+                    "style": "danger",
+                    "value": "restaurant_config",
+                    "action_id": "delete_all_restaurants"
                 }
             ]
         }
@@ -131,7 +200,7 @@ def repeat_text(ack, respond, command):
         CHANNEL_NAME = command["channel_name"]
         user_name = command["user_name"]
         respond(text=f"Bot is started in this channel by {user_name}", response_type="in_channel")
-        respond(blocks=create_config_message(), response_type="ephemeral")
+        respond(blocks=create_times_config_message(), response_type="ephemeral")
     elif CHANNEL_ID == command["channel_id"]:
         respond(text="Already running in this channel!\nIf you want to stop use /stop", response_type="ephemeral")
     else:
@@ -240,7 +309,7 @@ def handle_add_selected_time(ack, body, client):
             headers={"Content-Type": "application/json"},
             data=json.dumps({
                 "replace_original": "true",
-                "blocks": create_config_message(),
+                "blocks": create_times_config_message(),
             }
             )
         )
@@ -261,7 +330,7 @@ def handle_cancel_time_selection(ack, body, client):
             headers={"Content-Type": "application/json"},
             data=json.dumps({
                 "replace_original": "true",
-                "blocks": create_config_message(),
+                "blocks": create_times_config_message(),
             }
             )
         )
@@ -383,7 +452,7 @@ def handle_confirm_time_deletion(ack, body, client):
             headers={"Content-Type": "application/json"},
             data=json.dumps({
                 "replace_original": "true",
-                "blocks": create_config_message(),
+                "blocks": create_times_config_message(),
             }
             )
         )
@@ -404,7 +473,51 @@ def handle_cancel_time_deletion(ack, body, client):
             headers={"Content-Type": "application/json"},
             data=json.dumps({
                 "replace_original": "true",
-                "blocks": create_config_message(),
+                "blocks": create_times_config_message(),
+            }
+            )
+        )
+
+
+@app.action("confirm_times")
+def handle_confirm_times(ack, body, client):
+    ack()
+    if body is not None and \
+            "response_url" in body:
+        SELECTED_TIME_TO_DELETE.clear()
+        SELECTED_TIME_TO_ADD.clear()
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": create_restaurant_config_message(),
+            }
+            )
+        )
+
+
+@app.action("delete_all_times")
+def handle_delete_all_times(ack, body, client):
+    global TIMES
+    ack()
+    if body is not None and \
+            "response_url" in body:
+
+        if "user" in body and \
+                "id" in body["user"] and \
+                body["user"]["id"] in SELECTED_TIME_TO_DELETE:
+            _ = SELECTED_TIME_TO_DELETE.pop(body["user"]["id"])
+        TIMES.clear()
+        TIMES = [""]
+        SELECTED_TIME_TO_DELETE.clear()
+        SELECTED_TIME_TO_ADD.clear()
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": create_times_config_message(),
             }
             )
         )
