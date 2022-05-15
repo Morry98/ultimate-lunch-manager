@@ -1,11 +1,9 @@
 from loguru import logger as log
 import os
-import re
 import requests
 import json
 
 from dotenv import load_dotenv
-import pyjokes
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_sdk.web.client import WebClient
@@ -87,6 +85,7 @@ NOTIFICATION_DAYS_ALL_OPTIONS = [
 ]
 NOTIFICATION_DAYS_SELECTED_OPTIONS = []
 PARTICIPANTS_NOTIFICATION_TIME = "08:30"
+COMPUTE_LUNCH_TIME = "11:30"
 
 
 def create_times_config_message():
@@ -343,30 +342,51 @@ def create_participants_notification_config_message():
     ]
 
 
-@app.message(re.compile(".*"))
-def show_random_joke(message, say):
-    log.info("Received message: {}".format(message))
-    channel_type = message["channel_type"]
-    if channel_type != "im":
-        log.info(f"{message['user']} tried to use joke command in {message['channel']}")
-        return
-
-    dm_channel = message["channel"]
-    user_id = message["user"]
-
-    joke = pyjokes.get_joke()
-
-    say(text=joke, channel=dm_channel)
-
-
-@app.event("message")
-def handle_message_events(message, say):
-    log.info("Received message: {}".format(message))
-
-    dm_channel = message["channel"]
-    user_id = message["user"]
-
-    say(text="Invalid command", channel=dm_channel)
+def create_compute_lunch_notification_config_message():
+    return [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": "Configurations :gear:",
+                "emoji": True
+            }
+        },
+        {
+            "type": "input",
+            "element": {
+                "type": "timepicker",
+                "initial_time": COMPUTE_LUNCH_TIME,
+                "placeholder": {
+                    "type": "plain_text",
+                    "text": "Select computation lunch notification time",
+                    "emoji": True
+                },
+                "action_id": "select_compute_notification_notification_time"
+            },
+            "label": {
+                "type": "plain_text",
+                "text": "Select compute lunch notification time:",
+                "emoji": True
+            }
+        },
+        {
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Confirm",
+                        "emoji": True
+                    },
+                    "style": "primary",
+                    "value": "notification_config",
+                    "action_id": "confirm_compute_notification_notification_time"
+                }
+            ]
+        }
+    ]
 
 
 @app.command("/start")
@@ -1098,6 +1118,7 @@ def handle_select_participants_notification_time(ack, body, client):
                     PARTICIPANTS_NOTIFICATION_TIME = temp_inner_value_dict["selected_time"]
                     break
 
+
 @app.action("confirm_participants_notification_time")
 def handle_confirm_participants_notification_time(ack, body, client):
     ack()
@@ -1106,11 +1127,50 @@ def handle_confirm_participants_notification_time(ack, body, client):
         headers={"Content-Type": "application/json"},
         data=json.dumps({
             "replace_original": "true",
-            "text": f"Your notification time is {PARTICIPANTS_NOTIFICATION_TIME}",
-            # "blocks": create_restaurants_config_message(),
+            "blocks": create_compute_lunch_notification_config_message(),
         }
         )
     )
+
+
+@app.action("select_compute_notification_notification_time")
+def handle_select_compute_notification_notification_time(ack, body, client):
+    global COMPUTE_LUNCH_TIME
+    ack()
+    if body is not None and \
+            "state" in body and \
+            "user" in body and \
+            "id" in body["user"] and \
+            "values" in body["state"]:
+        for value in body["state"]["values"]:
+            for inner_value in body["state"]["values"][value]:
+                if "select_compute_notification_notification_time" != inner_value:
+                    continue
+                temp_inner_value_dict = body["state"]["values"][value][inner_value]
+                if "selected_time" in temp_inner_value_dict:
+                    COMPUTE_LUNCH_TIME = temp_inner_value_dict["selected_time"]
+                    break
+
+
+@app.action("confirm_compute_notification_notification_time")
+def handle_confirm_compute_notification_notification_time(ack, body, client):
+    ack()
+    requests.post(
+        url=body["response_url"],
+        headers={"Content-Type": "application/json"},
+        data=json.dumps({
+            "delete_original": "true",
+        }
+        )
+    )
+    if body is not None and \
+            "user" in body and \
+            "name" in body:
+        user_name = body["user"]["name"]
+        client.chat_postMessage(
+            channel=body["channel"]["id"],
+            text=f"Bot has been configured in this channel by {user_name}",
+        )
 
 
 def main():
