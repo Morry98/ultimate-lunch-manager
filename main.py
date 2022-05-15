@@ -86,6 +86,7 @@ NOTIFICATION_DAYS_ALL_OPTIONS = [
     }
 ]
 NOTIFICATION_DAYS_SELECTED_OPTIONS = []
+PARTICIPANTS_NOTIFICATION_TIME = "08:30"
 
 
 def create_times_config_message():
@@ -289,6 +290,53 @@ def create_notification_days_config_message():
                     "style": "primary",
                     "value": "notification_days",
                     "action_id": "confirm_notification_days"
+                }
+            ]
+        }
+    ]
+
+
+def create_participants_notification_config_message():
+    return [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": "Configurations :gear:",
+                "emoji": True
+            }
+        },
+        {
+            "type": "input",
+            "element": {
+                "type": "timepicker",
+                "initial_time": PARTICIPANTS_NOTIFICATION_TIME,
+                "placeholder": {
+                    "type": "plain_text",
+                    "text": "Select participants notification time",
+                    "emoji": True
+                },
+                "action_id": "select_participants_notification_time"
+            },
+            "label": {
+                "type": "plain_text",
+                "text": "Select participants notification time:",
+                "emoji": True
+            }
+        },
+        {
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Confirm",
+                        "emoji": True
+                    },
+                    "style": "primary",
+                    "value": "notification_config",
+                    "action_id": "confirm_participants_notification_time"
                 }
             ]
         }
@@ -951,7 +999,7 @@ def handle_delete_all_restaurants(ack, body, client):
 
 
 @app.action("notification_days_select_all")
-def handle_notification_days_select_all(ack, body,  client):
+def handle_notification_days_select_all(ack, body, client):
     global NOTIFICATION_DAYS
     global NOTIFICATION_DAYS_SELECTED_OPTIONS
     ack()
@@ -972,7 +1020,7 @@ def handle_notification_days_select_all(ack, body,  client):
 
 
 @app.action("notification_days_unselect_all")
-def handle_notification_days_unselect_all(ack, body,  client):
+def handle_notification_days_unselect_all(ack, body, client):
     global NOTIFICATION_DAYS
     global NOTIFICATION_DAYS_SELECTED_OPTIONS
     ack()
@@ -993,10 +1041,10 @@ def handle_notification_days_unselect_all(ack, body,  client):
 
 
 @app.action("notification_days_selection")
-def handle_notification_days_selection(ack, body,  client):
+def handle_notification_days_selection(ack, body, client):
     ack()
     if body is not None and \
-        "actions" in body:
+            "actions" in body:
         for action in body["actions"]:
             if "selected_options" in action:
                 NOTIFICATION_DAYS.clear()
@@ -1016,7 +1064,7 @@ def handle_notification_days_selection(ack, body,  client):
 
 
 @app.action("confirm_notification_days")
-def handle_confirm_notification_days(ack, body,  client):
+def handle_confirm_notification_days(ack, body, client):
     ack()
     if body is not None and \
             "response_url" in body:
@@ -1026,11 +1074,43 @@ def handle_confirm_notification_days(ack, body,  client):
             headers={"Content-Type": "application/json"},
             data=json.dumps({
                 "replace_original": "true",
-                "text": "Notification days set to: " + ", ".join(NOTIFICATION_DAYS),
-                #"blocks": create_notification_days_config_message(),
+                "blocks": create_participants_notification_config_message(),
             }
             )
         )
+
+
+@app.action("select_participants_notification_time")
+def handle_select_participants_notification_time(ack, body, client):
+    global PARTICIPANTS_NOTIFICATION_TIME
+    ack()
+    if body is not None and \
+            "state" in body and \
+            "user" in body and \
+            "id" in body["user"] and \
+            "values" in body["state"]:
+        for value in body["state"]["values"]:
+            for inner_value in body["state"]["values"][value]:
+                if "select_participants_notification_time" != inner_value:
+                    continue
+                temp_inner_value_dict = body["state"]["values"][value][inner_value]
+                if "selected_time" in temp_inner_value_dict:
+                    PARTICIPANTS_NOTIFICATION_TIME = temp_inner_value_dict["selected_time"]
+                    break
+
+@app.action("confirm_participants_notification_time")
+def handle_confirm_participants_notification_time(ack, body, client):
+    ack()
+    requests.post(
+        url=body["response_url"],
+        headers={"Content-Type": "application/json"},
+        data=json.dumps({
+            "replace_original": "true",
+            "text": f"Your notification time is {PARTICIPANTS_NOTIFICATION_TIME}",
+            # "blocks": create_restaurants_config_message(),
+        }
+        )
+    )
 
 
 def main():
