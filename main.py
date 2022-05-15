@@ -21,11 +21,11 @@ app = App(token=SLACK_APP_TOKEN, name="The Ultimate Lunch Manager")
 
 CHANNEL_ID = None
 CHANNEL_NAME = None
-POSSIBLE_TIME = []
+TIMES = ["", "12:00"]
 SELECTED_TIME_TO_ADD = {}  # {user: time}
 SELECTED_TIME_TO_DELETE = {}  # {user: time}
-TIMES = ["", "12:00"]
 RESTAURANTS = ["", "Nonna"]
+SELECTED_RESTAURANT_TO_DELETE = {}  # {user: restaurant}
 
 
 def create_times_config_message():
@@ -518,6 +518,117 @@ def handle_delete_all_times(ack, body, client):
             data=json.dumps({
                 "replace_original": "true",
                 "blocks": create_times_config_message(),
+            }
+            )
+        )
+
+
+@app.action("add_new_restaurant")
+def handle_add_new_restaurant(ack, body, client):
+    ack()
+    if body is not None and "response_url" in body:
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": [
+                    {
+                        "type": "header",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Configurations :gear:",
+                            "emoji": True
+                        }
+                    },
+                    {
+                        "type": "input",
+                        "element": {
+                            "type": "plain_text_input",
+                            "action_id": "restaurant_name"
+                        },
+                        "label": {
+                            "type": "plain_text",
+                            "text": "Insert a restaurant name:",
+                            "emoji": True
+                        }
+                    },
+                    {
+                        "type": "actions",
+                        "elements": [
+                            {
+                                "type": "button",
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "Confirm",
+                                    "emoji": True
+                                },
+                                "style": "primary",
+                                "value": "time_config",
+                                "action_id": "confirm_restaurant_insertion"
+                            },
+                            {
+                                "type": "button",
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "Cancel",
+                                    "emoji": True
+                                },
+                                "style": "danger",
+                                "value": "time_config",
+                                "action_id": "cancel_restaurant_insertion"
+                            }
+                        ]
+                    }
+                ]
+            }
+            )
+        )
+
+
+@app.action("confirm_restaurant_insertion")
+def handle_confirm_restaurant_insertion(ack, body, client):
+    ack()
+    if body is not None and \
+            "state" in body and \
+            "user" in body and \
+            "id" in body["user"] and \
+            "values" in body["state"]:
+        for value in body["state"]["values"]:
+            for inner_value in body["state"]["values"][value]:
+                if "restaurant_name" != inner_value:
+                    continue
+                temp_inner_value_dict = body["state"]["values"][value][inner_value]
+                if "value" in temp_inner_value_dict:
+                    selected_restaurant = temp_inner_value_dict["value"]
+                    if selected_restaurant not in RESTAURANTS:
+                        RESTAURANTS.append(selected_restaurant)
+                        RESTAURANTS.sort()
+                    break
+
+    requests.post(
+        url=body["response_url"],
+        headers={"Content-Type": "application/json"},
+        data=json.dumps({
+            "replace_original": "true",
+            "blocks": create_restaurant_config_message(),
+        }
+        )
+    )
+
+
+@app.action("cancel_restaurant_insertion")
+def handle_cancel_restaurant_insertion(ack, body, client):
+    ack()
+    if body is not None and \
+            "response_url" in body:
+        SELECTED_RESTAURANT_TO_DELETE.clear()
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": create_restaurant_config_message(),
             }
             )
         )
