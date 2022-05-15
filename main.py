@@ -22,7 +22,8 @@ app = App(token=SLACK_APP_TOKEN, name="The Ultimate Lunch Manager")
 CHANNEL_ID = None
 CHANNEL_NAME = None
 POSSIBLE_TIME = []
-SELECTED_TIME = {}  # {user: time}
+SELECTED_TIME_TO_ADD = {}  # {user: time}
+SELECTED_TIME_TO_DELETE = {}  # {user: time}
 TIMES = ["", "12:00"]
 
 
@@ -55,7 +56,7 @@ def create_config_message():
                         "emoji": True
                     },
                     "value": "time_config",
-                    "action_id": "add_new"
+                    "action_id": "add_new_time"
                 },
                 {
                     "type": "button",
@@ -65,7 +66,7 @@ def create_config_message():
                         "emoji": True
                     },
                     "value": "time_config",
-                    "action_id": "delete"
+                    "action_id": "delete_time"
                 },
                 {
                     "type": "button",
@@ -138,72 +139,72 @@ def repeat_text(ack, respond, command):
                 response_type="ephemeral")
 
 
-@app.action("add_new")
-def handle_add_new(ack, body, client: WebClient):
+@app.action("add_new_time")
+def handle_add_new_time(ack, body, client: WebClient):
     ack()
     if body is not None and "response_url" in body:
         default_selected_time = "13:00"
-        SELECTED_TIME[body["user"]["id"]] = default_selected_time
+        SELECTED_TIME_TO_ADD[body["user"]["id"]] = default_selected_time
         requests.post(
             url=body["response_url"],
             headers={"Content-Type": "application/json"},
             data=json.dumps({
                 "replace_original": "true",
                 "blocks": [
-                        {
-                            "type": "header",
-                            "text": {
+                    {
+                        "type": "header",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Configurations :gear:",
+                            "emoji": True
+                        }
+                    },
+                    {
+                        "type": "input",
+                        "element": {
+                            "type": "timepicker",
+                            "initial_time": default_selected_time,
+                            "placeholder": {
                                 "type": "plain_text",
-                                "text": "Configurations :gear:",
+                                "text": "Select time",
                                 "emoji": True
-                            }
+                            },
+                            "action_id": "select_time"
                         },
-                        {
-                            "type": "input",
-                            "element": {
-                                "type": "timepicker",
-                                "initial_time": default_selected_time,
-                                "placeholder": {
+                        "label": {
+                            "type": "plain_text",
+                            "text": "Select time:",
+                            "emoji": True
+                        }
+                    },
+                    {
+                        "type": "actions",
+                        "elements": [
+                            {
+                                "type": "button",
+                                "text": {
                                     "type": "plain_text",
-                                    "text": "Select time",
+                                    "text": "Add",
                                     "emoji": True
                                 },
-                                "action_id": "select_time"
+                                "style": "primary",
+                                "value": "time_config",
+                                "action_id": "add_selected_time"
                             },
-                            "label": {
-                                "type": "plain_text",
-                                "text": "Select time:",
-                                "emoji": True
-                            }
-                        },
-                        {
-                            "type": "actions",
-                            "elements": [
-                                {
-                                    "type": "button",
-                                    "text": {
-                                        "type": "plain_text",
-                                        "text": "Add",
-                                        "emoji": True
-                                    },
-                                    "style": "primary",
-                                    "value": "time_config",
-                                    "action_id": "add_selected_time"
+                            {
+                                "type": "button",
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "Cancel",
+                                    "emoji": True
                                 },
-                                {
-                                    "type": "button",
-                                    "text": {
-                                        "type": "plain_text",
-                                        "text": "Cancel",
-                                        "emoji": True
-                                    },
-                                    "style": "danger",
-                                    "value": "time_config",
-                                    "action_id": "cancel_time_selection"
-                                }
-                            ]
-                        }
-                    ]
+                                "style": "danger",
+                                "value": "time_config",
+                                "action_id": "cancel_time_selection"
+                            }
+                        ]
+                    }
+                ]
             }
             )
         )
@@ -219,7 +220,7 @@ def handle_select_time(ack, body, client):
                 selected_time = action["selected_time"]
                 break
         if selected_time is not None:
-            SELECTED_TIME[body["user"]["id"]] = selected_time
+            SELECTED_TIME_TO_ADD[body["user"]["id"]] = selected_time
 
 
 @app.action("add_selected_time")
@@ -229,8 +230,8 @@ def handle_add_selected_time(ack, body, client):
             "response_url" in body and \
             "user" in body and \
             "id" in body["user"] and \
-            body["user"]["id"] in SELECTED_TIME:
-        selected_time = SELECTED_TIME.pop(body["user"]["id"])
+            body["user"]["id"] in SELECTED_TIME_TO_ADD:
+        selected_time = SELECTED_TIME_TO_ADD.pop(body["user"]["id"])
         if selected_time not in TIMES:
             TIMES.append(selected_time)
             TIMES.sort()
@@ -253,8 +254,8 @@ def handle_cancel_time_selection(ack, body, client):
 
         if "user" in body and \
                 "id" in body["user"] and \
-                body["user"]["id"] in SELECTED_TIME:
-            _ = SELECTED_TIME.pop(body["user"]["id"])
+                body["user"]["id"] in SELECTED_TIME_TO_ADD:
+            _ = SELECTED_TIME_TO_ADD.pop(body["user"]["id"])
         requests.post(
             url=body["response_url"],
             headers={"Content-Type": "application/json"},
@@ -264,6 +265,150 @@ def handle_cancel_time_selection(ack, body, client):
             }
             )
         )
+
+
+@app.action("delete_time")
+def handle_delete_time(ack, body, client):
+    ack()
+    if body is not None and "response_url" in body:
+        options = []
+        for time in TIMES:
+            if time == "":
+                continue
+            options.append({
+                    "text": {
+                        "type": "plain_text",
+                        "text": time,
+                        "emoji": True
+                    },
+                    "value": time
+                }
+            )
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": [
+                    {
+                        "type": "header",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Configurations :gear:",
+                            "emoji": True
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "*Select a time to delete:*"
+                        }
+                    },
+                    {
+                        "type": "actions",
+                        "elements": [
+                            {
+                                "type": "static_select",
+                                "placeholder": {
+                                    "type": "plain_text",
+                                    "text": "Select a time",
+                                    "emoji": True
+                                },
+                                "options": options,
+                                "action_id": "select_time_to_delete"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "actions",
+                        "elements": [
+                            {
+                                "type": "button",
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "Confirm",
+                                    "emoji": True
+                                },
+                                "style": "primary",
+                                "value": "time_config",
+                                "action_id": "confirm_time_deletion"
+                            },
+                            {
+                                "type": "button",
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "Cancel",
+                                    "emoji": True
+                                },
+                                "style": "danger",
+                                "value": "time_config",
+                                "action_id": "cancel_time_deletion"
+                            }
+                        ]
+                    }
+                ]
+            }
+            )
+        )
+
+
+@app.action("select_time_to_delete")
+def handle_select_time_to_delete(ack, body, client):
+    ack()
+    selected_time = None
+    if body is not None and "actions" in body and "user" in body and "id" in body["user"]:
+        for action in body["actions"]:
+            if "type" in action and "selected_option" in action and action["type"] == "static_select":
+                if "value" in action["selected_option"]:
+                    selected_time = action["selected_option"]["value"]
+                break
+        if selected_time is not None:
+            SELECTED_TIME_TO_DELETE[body["user"]["id"]] = selected_time
+
+
+@app.action("confirm_time_deletion")
+def handle_confirm_time_deletion(ack, body, client):
+    ack()
+    if body is not None and \
+            "response_url" in body and \
+            "user" in body and \
+            "id" in body["user"] and \
+            body["user"]["id"] in SELECTED_TIME_TO_DELETE:
+        selected_time = SELECTED_TIME_TO_DELETE.pop(body["user"]["id"])
+        if selected_time in TIMES:
+            TIMES.remove(selected_time)
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": create_config_message(),
+            }
+            )
+        )
+
+
+@app.action("cancel_time_deletion")
+def handle_cancel_time_deletion(ack, body, client):
+    ack()
+    if body is not None and \
+            "response_url" in body:
+
+        if "user" in body and \
+                "id" in body["user"] and \
+                body["user"]["id"] in SELECTED_TIME_TO_DELETE:
+            _ = SELECTED_TIME_TO_DELETE.pop(body["user"]["id"])
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": create_config_message(),
+            }
+            )
+        )
+
 
 def main():
     handler = SocketModeHandler(app, SLACK_TOKEN_SOCKET)
