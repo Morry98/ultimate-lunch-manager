@@ -96,7 +96,7 @@ def create_times_config_message():
     ]
 
 
-def create_restaurant_config_message():
+def create_restaurants_config_message():
     restaurant_list = "\n- ".join(RESTAURANTS)
     return [
         {
@@ -491,7 +491,7 @@ def handle_confirm_times(ack, body, client):
             headers={"Content-Type": "application/json"},
             data=json.dumps({
                 "replace_original": "true",
-                "blocks": create_restaurant_config_message(),
+                "blocks": create_restaurants_config_message(),
             }
             )
         )
@@ -611,7 +611,7 @@ def handle_confirm_restaurant_insertion(ack, body, client):
         headers={"Content-Type": "application/json"},
         data=json.dumps({
             "replace_original": "true",
-            "blocks": create_restaurant_config_message(),
+            "blocks": create_restaurants_config_message(),
         }
         )
     )
@@ -628,7 +628,193 @@ def handle_cancel_restaurant_insertion(ack, body, client):
             headers={"Content-Type": "application/json"},
             data=json.dumps({
                 "replace_original": "true",
-                "blocks": create_restaurant_config_message(),
+                "blocks": create_restaurants_config_message(),
+            }
+            )
+        )
+
+
+@app.action("delete_restaurant")
+def handle_delete_restaurant(ack, body, client):
+    ack()
+    if body is not None and "response_url" in body:
+        options = []
+        for restaurant in RESTAURANTS:
+            if restaurant == "":
+                continue
+            options.append({
+                "text": {
+                    "type": "plain_text",
+                    "text": restaurant,
+                    "emoji": True
+                },
+                "value": restaurant
+            }
+            )
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": [
+                    {
+                        "type": "header",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Configurations :gear:",
+                            "emoji": True
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "*Select a restaurant to delete:*"
+                        }
+                    },
+                    {
+                        "type": "actions",
+                        "elements": [
+                            {
+                                "type": "static_select",
+                                "placeholder": {
+                                    "type": "plain_text",
+                                    "text": "Select a restaurant",
+                                    "emoji": True
+                                },
+                                "options": options,
+                                "action_id": "select_restaurant_to_delete"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "actions",
+                        "elements": [
+                            {
+                                "type": "button",
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "Confirm",
+                                    "emoji": True
+                                },
+                                "style": "primary",
+                                "value": "restaurant_config",
+                                "action_id": "confirm_restaurant_deletion"
+                            },
+                            {
+                                "type": "button",
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "Cancel",
+                                    "emoji": True
+                                },
+                                "style": "danger",
+                                "value": "restaurant_config",
+                                "action_id": "cancel_restaurant_deletion"
+                            }
+                        ]
+                    }
+                ]
+            }
+            )
+        )
+
+
+@app.action("select_restaurant_to_delete")
+def handle_select_restaurant_to_delete(ack, body, client):
+    ack()
+    selected_restaurant = None
+    if body is not None and "actions" in body and "user" in body and "id" in body["user"]:
+        for action in body["actions"]:
+            if "type" in action and "selected_option" in action and action["type"] == "static_select":
+                if "value" in action["selected_option"]:
+                    selected_restaurant = action["selected_option"]["value"]
+                break
+        if selected_restaurant is not None:
+            SELECTED_RESTAURANT_TO_DELETE[body["user"]["id"]] = selected_restaurant
+
+
+@app.action("confirm_restaurant_deletion")
+def handle_confirm_restaurant_deletion(ack, body, client):
+    ack()
+    if body is not None and \
+            "response_url" in body and \
+            "user" in body and \
+            "id" in body["user"] and \
+            body["user"]["id"] in SELECTED_RESTAURANT_TO_DELETE:
+        selected_restaurant = SELECTED_RESTAURANT_TO_DELETE.pop(body["user"]["id"])
+        if selected_restaurant in RESTAURANTS:
+            RESTAURANTS.remove(selected_restaurant)
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": create_restaurants_config_message(),
+            }
+            )
+        )
+
+
+@app.action("cancel_restaurant_deletion")
+def handle_cancel_restaurant_deletion(ack, body, client):
+    ack()
+    if body is not None and \
+            "response_url" in body:
+
+        if "user" in body and \
+                "id" in body["user"] and \
+                body["user"]["id"] in SELECTED_RESTAURANT_TO_DELETE:
+            _ = SELECTED_RESTAURANT_TO_DELETE.pop(body["user"]["id"])
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": create_restaurants_config_message(),
+            }
+            )
+        )
+
+
+@app.action("confirm_restaurants")
+def handle_confirm_restaurants(ack, body, client):
+    ack()
+    if body is not None and \
+            "response_url" in body:
+        SELECTED_RESTAURANT_TO_DELETE.clear()
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "text": "Restaurants updated!",
+                #"blocks": create_restaurants_config_message(),
+            }
+            )
+        )
+
+
+@app.action("delete_all_restaurants")
+def handle_delete_all_restaurants(ack, body, client):
+    global RESTAURANTS
+    ack()
+    if body is not None and \
+            "response_url" in body:
+
+        if "user" in body and \
+                "id" in body["user"] and \
+                body["user"]["id"] in SELECTED_RESTAURANT_TO_DELETE:
+            _ = SELECTED_RESTAURANT_TO_DELETE.pop(body["user"]["id"])
+        RESTAURANTS.clear()
+        RESTAURANTS = [""]
+        SELECTED_RESTAURANT_TO_DELETE.clear()
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": create_restaurants_config_message(),
             }
             )
         )
