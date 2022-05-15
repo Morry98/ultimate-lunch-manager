@@ -71,23 +71,23 @@ def create_config_message():
                     "type": "button",
                     "text": {
                         "type": "plain_text",
-                        "text": "Delete all",
-                        "emoji": True
-                    },
-                    "style": "danger",
-                    "value": "time_config",
-                    "action_id": "delete_all"
-                },
-                {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
                         "text": "Confirm values",
                         "emoji": True
                     },
                     "style": "primary",
                     "value": "time_config",
                     "action_id": "confirm"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Delete all",
+                        "emoji": True
+                    },
+                    "style": "danger",
+                    "value": "time_config",
+                    "action_id": "delete_all"
                 }
             ]
         }
@@ -244,6 +244,26 @@ def handle_add_selected_time(ack, body, client):
             )
         )
 
+
+@app.action("cancel_time_selection")
+def handle_cancel_time_selection(ack, body, client):
+    ack()
+    if body is not None and \
+            "response_url" in body:
+
+        if "user" in body and \
+                "id" in body["user"] and \
+                body["user"]["id"] in SELECTED_TIME:
+            _ = SELECTED_TIME.pop(body["user"]["id"])
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": create_config_message(),
+            }
+            )
+        )
 
 def main():
     handler = SocketModeHandler(app, SLACK_TOKEN_SOCKET)
