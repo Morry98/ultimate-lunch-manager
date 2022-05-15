@@ -525,3 +525,23 @@ https://api.slack.com/reference/block-kit/block-elements#button
 		}
 	]
 }
+
+POST https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+Content-type: application/json
+{
+    "replace_original": "true",
+    "text": "Thanks for your request, we'll process it and get back to you."
+}
+
+POST https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+Content-type: application/json
+{
+    "replace_original": "true",
+    "text": "Thanks for your request, we'll process it and get back to you."
+}
+
+client.chat_update(
+            text="white_check_mark",
+            channel=body["container"]["channel_id"],
+            ts=body["container"]["message_ts"],
+        )

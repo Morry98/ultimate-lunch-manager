@@ -1,16 +1,24 @@
+certifi==2021.10.8
+    # via requests
+charset-normalizer==2.0.12
+    # via requests
 colorama==0.4.4
     # via loguru
+idna==3.3
+    # via requests
 loguru==0.6.0
     # via -r requirements.in
 pyjokes==0.6.0
     # via -r requirements.in
 python-dotenv==0.20.0
     # via -r requirements.in
+requests==2.27.1
+    # via -r requirements.in
 slack-bolt==1.13.2
     # via -r requirements.in
 slack-sdk==3.16.1
-    # via
-    #   -r requirements.in
-    #   slack-bolt
+    # via slack-bolt
+urllib3==1.26.9
+    # via requests
 win32-setctime==1.1.0
     # via loguru
