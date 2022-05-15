@@ -1,3 +1,4 @@
 loguru
-slackclient
 python-dotenv
+pyjokes
+slack-bolt

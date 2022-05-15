@@ -1,32 +1,16 @@
-aiohttp==3.8.1
-    # via slackclient
-aiosignal==1.2.0
-    # via aiohttp
-async-timeout==4.0.2
-    # via aiohttp
-attrs==21.4.0
-    # via aiohttp
-charset-normalizer==2.0.12
-    # via aiohttp
 colorama==0.4.4
     # via loguru
-frozenlist==1.3.0
-    # via
-    #   aiohttp
-    #   aiosignal
-idna==3.3
-    # via yarl
 loguru==0.6.0
     # via -r requirements.in
-multidict==6.0.2
-    # via
-    #   aiohttp
-    #   yarl
+pyjokes==0.6.0
+    # via -r requirements.in
 python-dotenv==0.20.0
     # via -r requirements.in
-slackclient==2.9.4
+slack-bolt==1.13.2
     # via -r requirements.in
+slack-sdk==3.16.1
+    # via
+    #   -r requirements.in
+    #   slack-bolt
 win32-setctime==1.1.0
     # via loguru
-yarl==1.7.2
-    # via aiohttp
