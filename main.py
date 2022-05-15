@@ -26,6 +26,66 @@ SELECTED_TIME_TO_ADD = {}  # {user: time}
 SELECTED_TIME_TO_DELETE = {}  # {user: time}
 RESTAURANTS = ["", "Nonna"]
 SELECTED_RESTAURANT_TO_DELETE = {}  # {user: restaurant}
+NOTIFICATION_DAYS = []
+NOTIFICATION_DAYS_ALL_OPTIONS = [
+    {
+        "text": {
+            "type": "plain_text",
+            "text": "Monday",
+            "emoji": True
+        },
+        "value": "Monday"
+    },
+    {
+        "text": {
+            "type": "plain_text",
+            "text": "Tuesday",
+            "emoji": True
+        },
+        "value": "Tuesday"
+    },
+    {
+        "text": {
+            "type": "plain_text",
+            "text": "Wednesday",
+            "emoji": True
+        },
+        "value": "Wednesday"
+    },
+    {
+        "text": {
+            "type": "plain_text",
+            "text": "Thursday",
+            "emoji": True
+        },
+        "value": "Thursday"
+    },
+    {
+        "text": {
+            "type": "plain_text",
+            "text": "Friday",
+            "emoji": True
+        },
+        "value": "Friday"
+    },
+    {
+        "text": {
+            "type": "plain_text",
+            "text": "Saturday",
+            "emoji": True
+        },
+        "value": "Saturday"
+    },
+    {
+        "text": {
+            "type": "plain_text",
+            "text": "Sunday",
+            "emoji": True
+        },
+        "value": "Sunday"
+    }
+]
+NOTIFICATION_DAYS_SELECTED_OPTIONS = []
 
 
 def create_times_config_message():
@@ -158,6 +218,77 @@ def create_restaurants_config_message():
                     "style": "danger",
                     "value": "restaurant_config",
                     "action_id": "delete_all_restaurants"
+                }
+            ]
+        }
+    ]
+
+
+def create_notification_days_config_message():
+    if len(NOTIFICATION_DAYS_SELECTED_OPTIONS) > 0:
+        checkbox_elements = {
+            "type": "checkboxes",
+            "options": NOTIFICATION_DAYS_ALL_OPTIONS,
+            "initial_options": NOTIFICATION_DAYS_SELECTED_OPTIONS,
+            "action_id": "notification_days_selection"
+        }
+    else:
+        checkbox_elements = {
+            "type": "checkboxes",
+            "options": NOTIFICATION_DAYS_ALL_OPTIONS,
+            "action_id": "notification_days_selection"
+        }
+    return [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": "Configurations :gear:",
+                "emoji": True
+            }
+        },
+        {
+            "type": "input",
+            "element": checkbox_elements,
+            "label": {
+                "type": "plain_text",
+                "text": "Select the days when the bot will automatically work",
+                "emoji": True
+            }
+        },
+        {
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Select all",
+                        "emoji": True
+                    },
+                    "value": "notification_days",
+                    "action_id": "notification_days_select_all"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Unselect all",
+                        "emoji": True
+                    },
+                    "value": "notification_days",
+                    "action_id": "notification_days_unselect_all"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Confirm",
+                        "emoji": True
+                    },
+                    "style": "primary",
+                    "value": "notification_days",
+                    "action_id": "confirm_notification_days"
                 }
             ]
         }
@@ -788,8 +919,7 @@ def handle_confirm_restaurants(ack, body, client):
             headers={"Content-Type": "application/json"},
             data=json.dumps({
                 "replace_original": "true",
-                "text": "Restaurants updated!",
-                #"blocks": create_restaurants_config_message(),
+                "blocks": create_notification_days_config_message(),
             }
             )
         )
@@ -815,6 +945,89 @@ def handle_delete_all_restaurants(ack, body, client):
             data=json.dumps({
                 "replace_original": "true",
                 "blocks": create_restaurants_config_message(),
+            }
+            )
+        )
+
+
+@app.action("notification_days_select_all")
+def handle_notification_days_select_all(ack, body,  client):
+    global NOTIFICATION_DAYS
+    global NOTIFICATION_DAYS_SELECTED_OPTIONS
+    ack()
+    NOTIFICATION_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    NOTIFICATION_DAYS_SELECTED_OPTIONS = NOTIFICATION_DAYS_ALL_OPTIONS.copy()
+    if body is not None and \
+            "response_url" in body:
+        SELECTED_RESTAURANT_TO_DELETE.clear()
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": create_notification_days_config_message(),
+            }
+            )
+        )
+
+
+@app.action("notification_days_unselect_all")
+def handle_notification_days_unselect_all(ack, body,  client):
+    global NOTIFICATION_DAYS
+    global NOTIFICATION_DAYS_SELECTED_OPTIONS
+    ack()
+    NOTIFICATION_DAYS = []
+    NOTIFICATION_DAYS_SELECTED_OPTIONS = []
+    if body is not None and \
+            "response_url" in body:
+        SELECTED_RESTAURANT_TO_DELETE.clear()
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": create_notification_days_config_message(),
+            }
+            )
+        )
+
+
+@app.action("notification_days_selection")
+def handle_notification_days_selection(ack, body,  client):
+    ack()
+    if body is not None and \
+        "actions" in body:
+        for action in body["actions"]:
+            if "selected_options" in action:
+                NOTIFICATION_DAYS.clear()
+                NOTIFICATION_DAYS_SELECTED_OPTIONS.clear()
+                for selected_option in action["selected_options"]:
+                    day = selected_option["value"]
+                    option = {
+                        "text": {
+                            "type": "plain_text",
+                            "text": day,
+                            "emoji": True
+                        },
+                        "value": day
+                    }
+                    NOTIFICATION_DAYS.append(day)
+                    NOTIFICATION_DAYS_SELECTED_OPTIONS.append(option)
+
+
+@app.action("confirm_notification_days")
+def handle_confirm_notification_days(ack, body,  client):
+    ack()
+    if body is not None and \
+            "response_url" in body:
+        NOTIFICATION_DAYS.clear()
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "text": "Notification days set to: " + ", ".join(NOTIFICATION_DAYS),
+                #"blocks": create_notification_days_config_message(),
             }
             )
         )
