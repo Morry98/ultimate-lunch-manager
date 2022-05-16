@@ -9,11 +9,8 @@
                                                                                                                     |___/
 
 ![GitHub](https://img.shields.io/github/license/morry98/ultimate-lunch-manager)
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/morry98/ultimate-lunch-manager)
 ![GitHub top language](https://img.shields.io/github/languages/top/morry98/ultimate-lunch-manager)
 ![GitHub issues](https://img.shields.io/github/issues/morry98/ultimate-lunch-manager)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/ultimate-lunch-manager?color=green&label=Pypi%20download)](
-https://pypi.org/project/ultimate-lunch-manager/)
 
 [![Coverage Status](https://coveralls.io/repos/github/Morry98/ultimate-lunch-manager/badge.svg?branch=master)](
 https://coveralls.io/github/Morry98/ultimate-lunch-manager?branch=master)

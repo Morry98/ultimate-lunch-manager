@@ -389,7 +389,7 @@ def create_compute_lunch_notification_config_message():
     ]
 
 
-@app.command("/start")
+@app.command("/start")  # TODO: Change command name to be more specific
 def repeat_text(ack, respond, command):
     global CHANNEL_ID
     global CHANNEL_NAME
@@ -1171,6 +1171,9 @@ def handle_confirm_compute_notification_notification_time(ack, body, client):
             channel=body["channel"]["id"],
             text=f"Bot has been configured in this channel by {user_name}",
         )
+
+
+# TODO Command to start each command
 
 
 def main():
