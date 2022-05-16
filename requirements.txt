@@ -10,6 +10,8 @@ loguru==0.6.0
     # via -r requirements.in
 python-dotenv==0.20.0
     # via -r requirements.in
+pytz==2022.1
+    # via -r requirements.in
 requests==2.27.1
     # via -r requirements.in
 slack-bolt==1.13.2

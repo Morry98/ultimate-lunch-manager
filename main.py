@@ -1,3 +1,6 @@
+import datetime
+import re
+import pytz
 from loguru import logger as log
 import os
 import requests
@@ -14,6 +17,7 @@ load_dotenv()
 
 SLACK_APP_TOKEN = os.getenv('SLACK_APP_TOKEN')
 SLACK_TOKEN_SOCKET = os.getenv('SLACK_TOKEN_SOCKET')
+TIME_VALIDATION = re.compile(r"\d\d:\d\d")
 
 app = App(token=SLACK_APP_TOKEN, name="The Ultimate Lunch Manager")
 
@@ -85,7 +89,9 @@ NOTIFICATION_DAYS_ALL_OPTIONS = [
 ]
 NOTIFICATION_DAYS_SELECTED_OPTIONS = []
 PARTICIPANTS_NOTIFICATION_TIME = "08:30"
+PARTICIPANTS_NOTIFICATION_TIMEZONE = "Europe/Amsterdam"
 COMPUTE_LUNCH_TIME = "11:30"
+COMPUTE_LUNCH_TIMEZONE = "Europe/Amsterdam"
 
 
 def create_times_config_message():
@@ -1121,6 +1127,7 @@ def handle_select_participants_notification_time(ack, body, client):
 
 @app.action("confirm_participants_notification_time")
 def handle_confirm_participants_notification_time(ack, body, client):
+    global PARTICIPANTS_NOTIFICATION_TIMEZONE
     ack()
     requests.post(
         url=body["response_url"],
@@ -1131,6 +1138,13 @@ def handle_confirm_participants_notification_time(ack, body, client):
         }
         )
     )
+    if body is not None and \
+            "user" in body and \
+            "id" in body["user"]:
+        PARTICIPANTS_NOTIFICATION_TIMEZONE = get_timezone_from_user(get_user_info_from_client(
+            client=client,
+            user_id=body["user"]["id"]
+        ))
 
 
 @app.action("select_compute_notification_notification_time")
@@ -1154,6 +1168,7 @@ def handle_select_compute_notification_notification_time(ack, body, client):
 
 @app.action("confirm_compute_notification_notification_time")
 def handle_confirm_compute_notification_notification_time(ack, body, client):
+    global COMPUTE_LUNCH_TIMEZONE
     ack()
     requests.post(
         url=body["response_url"],
@@ -1165,12 +1180,47 @@ def handle_confirm_compute_notification_notification_time(ack, body, client):
     )
     if body is not None and \
             "user" in body and \
-            "name" in body:
+            "name" in body["user"] and \
+            "id" in body["user"]:
         user_name = body["user"]["name"]
         client.chat_postMessage(
             channel=body["channel"]["id"],
             text=f"Bot has been configured in this channel by {user_name}",
         )
+        COMPUTE_LUNCH_TIMEZONE = get_timezone_from_user(get_user_info_from_client(
+            client=client,
+            user_id=body["user"]["id"]
+        ))
+
+
+def get_user_info_from_client(client, user_id) -> dict:
+    user_info = client.users_info(user=str(user_id))
+    if user_info and "ok" in user_info and user_info["ok"] == True and "user" in user_info:
+        return user_info["user"]
+    return {}
+
+
+def get_timezone_from_user(user: dict) -> str:
+    return str(user["tz"]) if user is not None and "tz" in user else PARTICIPANTS_NOTIFICATION_TIMEZONE
+
+
+def convert_time_string_to_utc_datetime(time: str, timezone: int):
+    if not TIME_VALIDATION.match(time):
+        raise ValueError('Invalid time string')
+    utc_now = datetime.datetime.utcnow()
+    compute_lunch_date = utc_now.replace(
+        hour=int(time.split(":")[0]),
+        minute=int(time.split(":")[1]),
+        second=0,
+        microsecond=0
+    )
+    compute_lunch_date = compute_lunch_date - datetime.timedelta(seconds=timezone)
+    return compute_lunch_date
+
+
+def get_seconds_difference_from_timezone_name(timezone: str) -> float:
+    nowtz = datetime.datetime.now(pytz.timezone(timezone))
+    return nowtz.utcoffset().total_seconds()
 
 
 # TODO Command to start each command
