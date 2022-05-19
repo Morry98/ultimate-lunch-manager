@@ -1,5 +1,7 @@
 import datetime
 import re
+from typing import Optional
+
 import pytz
 from loguru import logger as log
 import os
@@ -11,6 +13,9 @@ from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_sdk.web.client import WebClient
 
+from ultimate_lunch_manager.notification_manager import NotificationManager, add_participating_user, \
+    remove_participating_user, add_message_to_participants, get_participants_message
+
 log.level("INFO")
 
 load_dotenv()
@@ -21,6 +26,7 @@ TIME_VALIDATION = re.compile(r"\d\d:\d\d")
 
 app = App(token=SLACK_APP_TOKEN, name="The Ultimate Lunch Manager")
 
+CLIENT: Optional[WebClient] = None
 CHANNEL_ID = None
 CHANNEL_NAME = None
 TIMES = ["", "12:00"]
@@ -415,6 +421,9 @@ def repeat_text(ack, respond, command):
 
 @app.action("add_new_time")
 def handle_add_new_time(ack, body, client: WebClient):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and "response_url" in body:
         default_selected_time = "13:00"
@@ -486,6 +495,9 @@ def handle_add_new_time(ack, body, client: WebClient):
 
 @app.action("select_time")
 def handle_select_time(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     selected_time = None
     if body is not None and "actions" in body and "user" in body and "id" in body["user"]:
@@ -499,6 +511,9 @@ def handle_select_time(ack, body, client):
 
 @app.action("add_selected_time")
 def handle_add_selected_time(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and \
             "response_url" in body and \
@@ -522,6 +537,9 @@ def handle_add_selected_time(ack, body, client):
 
 @app.action("cancel_time_selection")
 def handle_cancel_time_selection(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and \
             "response_url" in body:
@@ -543,6 +561,9 @@ def handle_cancel_time_selection(ack, body, client):
 
 @app.action("delete_time")
 def handle_delete_time(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and "response_url" in body:
         options = []
@@ -629,6 +650,9 @@ def handle_delete_time(ack, body, client):
 
 @app.action("select_time_to_delete")
 def handle_select_time_to_delete(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     selected_time = None
     if body is not None and "actions" in body and "user" in body and "id" in body["user"]:
@@ -643,6 +667,9 @@ def handle_select_time_to_delete(ack, body, client):
 
 @app.action("confirm_time_deletion")
 def handle_confirm_time_deletion(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and \
             "response_url" in body and \
@@ -665,6 +692,9 @@ def handle_confirm_time_deletion(ack, body, client):
 
 @app.action("cancel_time_deletion")
 def handle_cancel_time_deletion(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and \
             "response_url" in body:
@@ -686,6 +716,9 @@ def handle_cancel_time_deletion(ack, body, client):
 
 @app.action("confirm_times")
 def handle_confirm_times(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and \
             "response_url" in body:
@@ -704,6 +737,9 @@ def handle_confirm_times(ack, body, client):
 
 @app.action("delete_all_times")
 def handle_delete_all_times(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     global TIMES
     ack()
     if body is not None and \
@@ -730,6 +766,9 @@ def handle_delete_all_times(ack, body, client):
 
 @app.action("add_new_restaurant")
 def handle_add_new_restaurant(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and "response_url" in body:
         requests.post(
@@ -793,6 +832,9 @@ def handle_add_new_restaurant(ack, body, client):
 
 @app.action("confirm_restaurant_insertion")
 def handle_confirm_restaurant_insertion(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and \
             "state" in body and \
@@ -824,6 +866,9 @@ def handle_confirm_restaurant_insertion(ack, body, client):
 
 @app.action("cancel_restaurant_insertion")
 def handle_cancel_restaurant_insertion(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and \
             "response_url" in body:
@@ -841,6 +886,9 @@ def handle_cancel_restaurant_insertion(ack, body, client):
 
 @app.action("delete_restaurant")
 def handle_delete_restaurant(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and "response_url" in body:
         options = []
@@ -927,6 +975,9 @@ def handle_delete_restaurant(ack, body, client):
 
 @app.action("select_restaurant_to_delete")
 def handle_select_restaurant_to_delete(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     selected_restaurant = None
     if body is not None and "actions" in body and "user" in body and "id" in body["user"]:
@@ -941,6 +992,9 @@ def handle_select_restaurant_to_delete(ack, body, client):
 
 @app.action("confirm_restaurant_deletion")
 def handle_confirm_restaurant_deletion(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and \
             "response_url" in body and \
@@ -963,6 +1017,9 @@ def handle_confirm_restaurant_deletion(ack, body, client):
 
 @app.action("cancel_restaurant_deletion")
 def handle_cancel_restaurant_deletion(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and \
             "response_url" in body:
@@ -984,6 +1041,9 @@ def handle_cancel_restaurant_deletion(ack, body, client):
 
 @app.action("confirm_restaurants")
 def handle_confirm_restaurants(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and \
             "response_url" in body:
@@ -1002,6 +1062,9 @@ def handle_confirm_restaurants(ack, body, client):
 @app.action("delete_all_restaurants")
 def handle_delete_all_restaurants(ack, body, client):
     global RESTAURANTS
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and \
             "response_url" in body:
@@ -1028,6 +1091,9 @@ def handle_delete_all_restaurants(ack, body, client):
 def handle_notification_days_select_all(ack, body, client):
     global NOTIFICATION_DAYS
     global NOTIFICATION_DAYS_SELECTED_OPTIONS
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     NOTIFICATION_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     NOTIFICATION_DAYS_SELECTED_OPTIONS = NOTIFICATION_DAYS_ALL_OPTIONS.copy()
@@ -1049,6 +1115,9 @@ def handle_notification_days_select_all(ack, body, client):
 def handle_notification_days_unselect_all(ack, body, client):
     global NOTIFICATION_DAYS
     global NOTIFICATION_DAYS_SELECTED_OPTIONS
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     NOTIFICATION_DAYS = []
     NOTIFICATION_DAYS_SELECTED_OPTIONS = []
@@ -1068,6 +1137,9 @@ def handle_notification_days_unselect_all(ack, body, client):
 
 @app.action("notification_days_selection")
 def handle_notification_days_selection(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and \
             "actions" in body:
@@ -1091,6 +1163,9 @@ def handle_notification_days_selection(ack, body, client):
 
 @app.action("confirm_notification_days")
 def handle_confirm_notification_days(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and \
             "response_url" in body:
@@ -1109,6 +1184,9 @@ def handle_confirm_notification_days(ack, body, client):
 @app.action("select_participants_notification_time")
 def handle_select_participants_notification_time(ack, body, client):
     global PARTICIPANTS_NOTIFICATION_TIME
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and \
             "state" in body and \
@@ -1128,6 +1206,9 @@ def handle_select_participants_notification_time(ack, body, client):
 @app.action("confirm_participants_notification_time")
 def handle_confirm_participants_notification_time(ack, body, client):
     global PARTICIPANTS_NOTIFICATION_TIMEZONE
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     requests.post(
         url=body["response_url"],
@@ -1150,6 +1231,9 @@ def handle_confirm_participants_notification_time(ack, body, client):
 @app.action("select_compute_notification_notification_time")
 def handle_select_compute_notification_notification_time(ack, body, client):
     global COMPUTE_LUNCH_TIME
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     if body is not None and \
             "state" in body and \
@@ -1169,6 +1253,9 @@ def handle_select_compute_notification_notification_time(ack, body, client):
 @app.action("confirm_compute_notification_notification_time")
 def handle_confirm_compute_notification_notification_time(ack, body, client):
     global COMPUTE_LUNCH_TIMEZONE
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
     ack()
     requests.post(
         url=body["response_url"],
@@ -1192,6 +1279,16 @@ def handle_confirm_compute_notification_notification_time(ack, body, client):
             user_id=body["user"]["id"]
         ))
 
+    notification_manager = NotificationManager(
+        client=CLIENT,
+        channel_name=CHANNEL_NAME,
+        participants_notification_datetime=convert_time_string_to_utc_datetime(time=PARTICIPANTS_NOTIFICATION_TIME,
+                                                                              timezone=PARTICIPANTS_NOTIFICATION_TIMEZONE),
+        compute_lunch_datetime=convert_time_string_to_utc_datetime(time=COMPUTE_LUNCH_TIME,
+                                                                   timezone=COMPUTE_LUNCH_TIMEZONE)
+    )
+    notification_manager.run()
+
 
 def get_user_info_from_client(client, user_id) -> dict:
     user_info = client.users_info(user=str(user_id))
@@ -1204,24 +1301,222 @@ def get_timezone_from_user(user: dict) -> str:
     return str(user["tz"]) if user is not None and "tz" in user else PARTICIPANTS_NOTIFICATION_TIMEZONE
 
 
-def convert_time_string_to_utc_datetime(time: str, timezone: int):
+def convert_time_string_to_utc_datetime(time: str, timezone: str):
     if not TIME_VALIDATION.match(time):
         raise ValueError('Invalid time string')
     utc_now = datetime.datetime.utcnow()
-    compute_lunch_date = utc_now.replace(
+    date = utc_now.replace(
         hour=int(time.split(":")[0]),
         minute=int(time.split(":")[1]),
         second=0,
         microsecond=0
     )
-    compute_lunch_date = compute_lunch_date - datetime.timedelta(seconds=timezone)
-    return compute_lunch_date
+    date = date - datetime.timedelta(
+        seconds=get_seconds_difference_from_timezone_name(timezone)
+    )
+    return date
 
 
 def get_seconds_difference_from_timezone_name(timezone: str) -> float:
     nowtz = datetime.datetime.now(pytz.timezone(timezone))
     return nowtz.utcoffset().total_seconds()
 
+
+@app.action("confirm_train_participation")
+def handle_confirm_train_participation(ack, body, client):
+    ack()
+    if body is not None and \
+            "user" in body and \
+            "id" in body["user"]:
+        user_info = get_user_info_from_client(
+            client=client,
+            user_id=body["user"]["id"]
+        )
+        add_participating_user(user_name=user_info["name"], user_id=user_info["id"])
+    response = client.chat_postMessage(
+        channel=body["user"]["id"],
+        user=body["user"]["id"],
+        text="You are participating!",
+        blocks=[
+                {
+                    "type": "header",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "You are participating to train :sunglasses:",
+                        "emoji": True
+                    }
+                },
+                {
+                    "type": "actions",
+                    "elements": [
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Leave the train!",
+                                "emoji": True
+                            },
+                            "style": "danger",
+                            "value": "train_participation",
+                            "action_id": "leave_train"
+                        }
+                    ]
+                }
+            ]
+    )
+    if "ok" in response and "ts" in response:
+        add_message_to_participants(
+            message_ts=response["ts"],
+            user_id=body["user"]["id"],
+            channel=response["channel"]
+        )
+
+
+@app.action("reject_train_participation")
+def handle_reject_train_participation(ack, body, client):
+    ack()
+    if body is not None and \
+            "user" in body and \
+            "id" in body["user"]:
+        user_info = get_user_info_from_client(
+            client=client,
+            user_id=body["user"]["id"]
+        )
+        remove_participating_user(user_name=user_info["name"], user_id=user_info["id"])
+    response = client.chat_postMessage(
+        channel=body["user"]["id"],
+        user=body["user"]["id"],
+        text="You are not participating!",
+        blocks=[
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": "You are not participating to train :smiling_face_with_tear:",
+                    "emoji": True
+                }
+            },
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Board the train!",
+                            "emoji": True
+                        },
+                        "style": "primary",
+                        "value": "train_participation",
+                        "action_id": "board_train"
+                    }
+                ]
+            }
+        ]
+    )
+    if "ok" in response and "ts" in response:
+        add_message_to_participants(
+            message_ts=response["ts"],
+            user_id=body["user"]["id"],
+            channel=response["channel"]
+        )
+
+
+@app.action("board_train")
+def handle_board_train(ack, body, client):
+    ack()
+    if body is not None and \
+            "user" in body and \
+            "id" in body["user"]:
+        user_info = get_user_info_from_client(
+            client=client,
+            user_id=body["user"]["id"]
+        )
+        add_participating_user(user_name=user_info["name"], user_id=user_info["id"])
+    participants_message = get_participants_message(user_id=body["user"]["id"])
+    client.chat_update(
+        channel=participants_message[1],
+        user=body["user"]["id"],
+        ts=participants_message[0],
+        text="You are participating!",
+        blocks=[
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": "You are participating to train :sunglasses:",
+                    "emoji": True
+                }
+            },
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Leave the train!",
+                            "emoji": True
+                        },
+                        "style": "danger",
+                        "value": "train_participation",
+                        "action_id": "leave_train"
+                    }
+                ]
+            }
+        ]
+    )
+
+
+@app.action("leave_train")
+def handle_leave_train(ack, body, client):
+    ack()
+    if body is not None and \
+            "user" in body and \
+            "id" in body["user"]:
+        user_info = get_user_info_from_client(
+            client=client,
+            user_id=body["user"]["id"]
+        )
+        remove_participating_user(user_name=user_info["name"], user_id=user_info["id"])
+    participants_message = get_participants_message(user_id=body["user"]["id"])
+    client.chat_update(
+        channel=participants_message[1],
+        user=body["user"]["id"],
+        ts=participants_message[0],
+        text="You are not participating!",
+        blocks=[
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": "You are not participating to train :smiling_face_with_tear:",
+                    "emoji": True
+                }
+            },
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Board the train!",
+                            "emoji": True
+                        },
+                        "style": "primary",
+                        "value": "train_participation",
+                        "action_id": "board_train"
+                    }
+                ]
+            }
+        ]
+    )
+
+
+@app.event("message")
+def handle_message_events(body, logger):
+    pass
 
 # TODO Command to start each command
 
