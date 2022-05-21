@@ -60,7 +60,7 @@ depending on your platform.
 
 ## Create slack bot
 
-Create a Slack App starting from !()[https://api.slack.com/apps].  
+Create a Slack App starting from [https://api.slack.com/apps](https://api.slack.com/apps).  
 Give your app a name, and a workspace you will develop the app in.
 
 ## Slack permissions
