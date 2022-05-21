@@ -3,6 +3,7 @@ import random
 import datetime
 from threading import Thread
 from time import sleep
+from typing import Optional
 
 TRAINS_EMOJI = [":train2:",
                  ":bullettrain_side:",
@@ -33,6 +34,8 @@ FOOD_EMOJI = [":poultry_leg:",
 
 USERS_PARTICIPATING = []
 USERS_NOT_PARTICIPATING = []
+USER_TIME_PREFERENCES = {}
+USER_RESTAURANT_PREFERENCES = {}
 PARTICIPANTS_PRIVATE_MESSAGES = {}
 
 def create_participating_message():
@@ -86,8 +89,10 @@ def create_participating_message():
 
 def task(client, channel_name, compute_lunch_datetime, participants_notification_datetime):
     time_diff = participants_notification_datetime - datetime.datetime.utcnow()
-    print(f"time diff in seconds: {time_diff.total_seconds()}")
-    sleep(time_diff.total_seconds())
+    time_diff_seconds = time_diff.total_seconds()
+    while time_diff_seconds < 0:
+        time_diff_seconds += 24 * 60 * 60  # add 24 hours
+    sleep(time_diff_seconds)
     if client is not None and channel_name is not None:
         client.chat_postMessage(
             channel=channel_name,
@@ -126,3 +131,31 @@ def add_message_to_participants(message_ts, user_id, channel):
 
 def get_participants_message(user_id):
     return PARTICIPANTS_PRIVATE_MESSAGES[user_id]
+
+
+def add_user_time_preferences(user_id, time):
+    if user_id not in USER_TIME_PREFERENCES:
+        USER_TIME_PREFERENCES[user_id] = []
+    USER_TIME_PREFERENCES[user_id].append(time)
+
+
+def remove_user_time_preferences(user_id, time: Optional[str] = None):
+    if user_id in USER_TIME_PREFERENCES:
+        if time is None:
+            USER_TIME_PREFERENCES.pop(user_id)
+        elif time in USER_TIME_PREFERENCES[user_id]:
+            USER_TIME_PREFERENCES[user_id].remove(time)
+
+
+def add_user_restaurant_preferences(user_id, restaurant):
+    if user_id not in USER_RESTAURANT_PREFERENCES:
+        USER_RESTAURANT_PREFERENCES[user_id] = []
+    USER_RESTAURANT_PREFERENCES[user_id].append(restaurant)
+
+
+def remove_user_restaurant_preferences(user_id, restaurant: Optional[str] = None):
+    if user_id in USER_RESTAURANT_PREFERENCES:
+        if restaurant is None:
+            USER_RESTAURANT_PREFERENCES.pop(user_id)
+        elif restaurant in USER_RESTAURANT_PREFERENCES[user_id]:
+            USER_RESTAURANT_PREFERENCES[user_id].remove(restaurant)

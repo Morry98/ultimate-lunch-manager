@@ -14,7 +14,8 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_sdk.web.client import WebClient
 
 from ultimate_lunch_manager.notification_manager import NotificationManager, add_participating_user, \
-    remove_participating_user, add_message_to_participants, get_participants_message
+    remove_participating_user, add_message_to_participants, get_participants_message, add_user_time_preferences, \
+    remove_user_time_preferences, add_user_restaurant_preferences, remove_user_restaurant_preferences
 
 log.level("INFO")
 
@@ -30,9 +31,31 @@ CLIENT: Optional[WebClient] = None
 CHANNEL_ID = None
 CHANNEL_NAME = None
 TIMES = ["", "12:00"]
+TIME_ALL_OPTIONS = [
+    {
+        "text": {
+            "type": "plain_text",
+            "text": "12:00",
+            "emoji": True
+        },
+        "value": "12:00"
+    },
+]
+TIME_SELECTED_OPTIONS = []
 SELECTED_TIME_TO_ADD = {}  # {user: time}
 SELECTED_TIME_TO_DELETE = {}  # {user: time}
 RESTAURANTS = ["", "Nonna"]
+RESTAURANTS_ALL_OPTIONS = [
+    {
+        "text": {
+            "type": "plain_text",
+            "text": "Nonna",
+            "emoji": True
+        },
+        "value": "Nonna"
+    },
+]
+RESTAURANTS_SELECTED_OPTIONS = []
 SELECTED_RESTAURANT_TO_DELETE = {}  # {user: restaurant}
 NOTIFICATION_DAYS = []
 NOTIFICATION_DAYS_ALL_OPTIONS = [
@@ -307,6 +330,207 @@ def create_notification_days_config_message():
     ]
 
 
+def create_select_times_message():
+    if len(TIME_SELECTED_OPTIONS) > 0:
+        checkbox_elements = {
+            "type": "checkboxes",
+            "options": TIME_ALL_OPTIONS,
+            "initial_options": TIME_SELECTED_OPTIONS,
+            "action_id": "time_selection"
+        }
+    else:
+        checkbox_elements = {
+            "type": "checkboxes",
+            "options": TIME_ALL_OPTIONS,
+            "action_id": "time_selection"
+        }
+    return [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": "Time selection :clock:",
+                "emoji": True
+            }
+        },
+        {
+            "type": "input",
+            "element": checkbox_elements,
+            "label": {
+                "type": "plain_text",
+                "text": "Select all the times when you are available",
+                "emoji": True
+            }
+        },
+        {
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Select all",
+                        "emoji": True
+                    },
+                    "value": "time",
+                    "action_id": "time_select_all"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Unselect all",
+                        "emoji": True
+                    },
+                    "value": "time",
+                    "action_id": "time_unselect_all"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Confirm",
+                        "emoji": True
+                    },
+                    "style": "primary",
+                    "value": "time",
+                    "action_id": "confirm_time_selection"
+                }
+            ]
+        }
+    ]
+
+
+def create_select_restaurant_message():
+    if len(RESTAURANTS_SELECTED_OPTIONS) > 0:
+        checkbox_elements = {
+            "type": "checkboxes",
+            "options": RESTAURANTS_ALL_OPTIONS,
+            "initial_options": RESTAURANTS_SELECTED_OPTIONS,
+            "action_id": "restaurants_selection"
+        }
+    else:
+        checkbox_elements = {
+            "type": "checkboxes",
+            "options": RESTAURANTS_ALL_OPTIONS,
+            "action_id": "restaurants_selection"
+        }
+    return [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": "Restaurants selection",
+                "emoji": True
+            }
+        },
+        {
+            "type": "input",
+            "element": checkbox_elements,
+            "label": {
+                "type": "plain_text",
+                "text": "Select all the restaurants you prefer",
+                "emoji": True
+            }
+        },
+        {
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Select all",
+                        "emoji": True
+                    },
+                    "value": "restaurants",
+                    "action_id": "restaurants_select_all"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Unselect all",
+                        "emoji": True
+                    },
+                    "value": "restaurants",
+                    "action_id": "restaurants_unselect_all"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Confirm",
+                        "emoji": True
+                    },
+                    "style": "primary",
+                    "value": "restaurants",
+                    "action_id": "confirm_restaurants_selection"
+                }
+            ]
+        }
+    ]
+
+
+def create_on_board_message():
+    return [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": "You are participating to train :sunglasses:",
+                "emoji": True
+            }
+        },
+        {
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "See selected preferences!",
+                        "emoji": True
+                    },
+                    "value": "train_participation",
+                    "action_id": "see_preferences"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Update time preferences!",
+                        "emoji": True
+                    },
+                    "value": "train_participation",
+                    "action_id": "update_time_preferences"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Update restaurant preferences!",
+                        "emoji": True
+                    },
+                    "value": "train_participation",
+                    "action_id": "update_restaurant_preferences"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Leave the train!",
+                        "emoji": True
+                    },
+                    "style": "danger",
+                    "value": "train_participation",
+                    "action_id": "leave_train"
+                }
+            ]
+        }
+    ]
+
+
 def create_participants_notification_config_message():
     return [
         {
@@ -522,6 +746,15 @@ def handle_add_selected_time(ack, body, client):
             body["user"]["id"] in SELECTED_TIME_TO_ADD:
         selected_time = SELECTED_TIME_TO_ADD.pop(body["user"]["id"])
         if selected_time not in TIMES:
+            TIME_ALL_OPTIONS.append({
+                "text": {
+                    "type": "plain_text",
+                    "text": selected_time,
+                    "emoji": True
+                },
+                "value": selected_time
+            })
+            TIME_ALL_OPTIONS.sort(key=lambda x: x["text"]["text"])
             TIMES.append(selected_time)
             TIMES.sort()
         requests.post(
@@ -679,6 +912,11 @@ def handle_confirm_time_deletion(ack, body, client):
         selected_time = SELECTED_TIME_TO_DELETE.pop(body["user"]["id"])
         if selected_time in TIMES:
             TIMES.remove(selected_time)
+            # remove selected_time from TIME_ALL_OPTIONS where text: text = selected_time
+            for i in range(len(TIME_ALL_OPTIONS)):
+                if TIME_ALL_OPTIONS[i]["text"]["text"] == selected_time:
+                    TIME_ALL_OPTIONS.pop(i)
+                    break
         requests.post(
             url=body["response_url"],
             headers={"Content-Type": "application/json"},
@@ -849,6 +1087,15 @@ def handle_confirm_restaurant_insertion(ack, body, client):
                 if "value" in temp_inner_value_dict:
                     selected_restaurant = temp_inner_value_dict["value"]
                     if selected_restaurant not in RESTAURANTS:
+                        RESTAURANTS_ALL_OPTIONS.append({
+                            "text": {
+                                "type": "plain_text",
+                                "text": selected_restaurant,
+                                "emoji": True
+                            },
+                            "value": selected_restaurant
+                        })
+                        RESTAURANTS_ALL_OPTIONS.sort(key=lambda x: x["text"]["text"])
                         RESTAURANTS.append(selected_restaurant)
                         RESTAURANTS.sort()
                     break
@@ -1004,6 +1251,11 @@ def handle_confirm_restaurant_deletion(ack, body, client):
         selected_restaurant = SELECTED_RESTAURANT_TO_DELETE.pop(body["user"]["id"])
         if selected_restaurant in RESTAURANTS:
             RESTAURANTS.remove(selected_restaurant)
+            # remove selected_restaurant from RESTAURANTS_ALL_OPTIONS where text: text = selected_restaurant
+            for i in range(len(RESTAURANTS_ALL_OPTIONS)):
+                if RESTAURANTS_ALL_OPTIONS[i]["text"]["text"] == selected_restaurant:
+                    RESTAURANTS_ALL_OPTIONS.pop(i)
+                    break
         requests.post(
             url=body["response_url"],
             headers={"Content-Type": "application/json"},
@@ -1283,7 +1535,7 @@ def handle_confirm_compute_notification_notification_time(ack, body, client):
         client=CLIENT,
         channel_name=CHANNEL_NAME,
         participants_notification_datetime=convert_time_string_to_utc_datetime(time=PARTICIPANTS_NOTIFICATION_TIME,
-                                                                              timezone=PARTICIPANTS_NOTIFICATION_TIMEZONE),
+                                                                               timezone=PARTICIPANTS_NOTIFICATION_TIMEZONE),
         compute_lunch_datetime=convert_time_string_to_utc_datetime(time=COMPUTE_LUNCH_TIME,
                                                                    timezone=COMPUTE_LUNCH_TIMEZONE)
     )
@@ -1333,36 +1585,55 @@ def handle_confirm_train_participation(ack, body, client):
             user_id=body["user"]["id"]
         )
         add_participating_user(user_name=user_info["name"], user_id=user_info["id"])
+    response = client.chat_postEphemeral(
+        channel=CHANNEL_NAME,
+        user=body["user"]["id"],
+        text="You are participating!",
+        blocks=create_select_times_message()
+    )
+
+
+@app.action("confirm_restaurants_preference")
+def handle_confirm_train_participation(ack, body, client):
+    ack()
+    if body is not None and \
+            "user" in body and \
+            "id" in body["user"]:
+        user_info = get_user_info_from_client(
+            client=client,
+            user_id=body["user"]["id"]
+        )
+        add_participating_user(user_name=user_info["name"], user_id=user_info["id"])
     response = client.chat_postMessage(
         channel=body["user"]["id"],
         user=body["user"]["id"],
         text="You are participating!",
         blocks=[
-                {
-                    "type": "header",
-                    "text": {
-                        "type": "plain_text",
-                        "text": "You are participating to train :sunglasses:",
-                        "emoji": True
-                    }
-                },
-                {
-                    "type": "actions",
-                    "elements": [
-                        {
-                            "type": "button",
-                            "text": {
-                                "type": "plain_text",
-                                "text": "Leave the train!",
-                                "emoji": True
-                            },
-                            "style": "danger",
-                            "value": "train_participation",
-                            "action_id": "leave_train"
-                        }
-                    ]
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": "You are participating to train :sunglasses:",
+                    "emoji": True
                 }
-            ]
+            },
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Leave the train!",
+                            "emoji": True
+                        },
+                        "style": "danger",
+                        "value": "train_participation",
+                        "action_id": "leave_train"
+                    }
+                ]
+            }
+        ]
     )
     if "ok" in response and "ts" in response:
         add_message_to_participants(
@@ -1439,32 +1710,7 @@ def handle_board_train(ack, body, client):
         user=body["user"]["id"],
         ts=participants_message[0],
         text="You are participating!",
-        blocks=[
-            {
-                "type": "header",
-                "text": {
-                    "type": "plain_text",
-                    "text": "You are participating to train :sunglasses:",
-                    "emoji": True
-                }
-            },
-            {
-                "type": "actions",
-                "elements": [
-                    {
-                        "type": "button",
-                        "text": {
-                            "type": "plain_text",
-                            "text": "Leave the train!",
-                            "emoji": True
-                        },
-                        "style": "danger",
-                        "value": "train_participation",
-                        "action_id": "leave_train"
-                    }
-                ]
-            }
-        ]
+        blocks=create_on_board_message()
     )
 
 
@@ -1514,11 +1760,206 @@ def handle_leave_train(ack, body, client):
     )
 
 
+@app.action("time_select_all")
+def handle_time_select_all(ack, body, client):
+    global TIME_SELECTED_OPTIONS
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
+    ack()
+    for t in TIMES:
+        add_user_time_preferences(user_id=body["user"]["id"], time=t)
+    TIME_SELECTED_OPTIONS = TIME_ALL_OPTIONS.copy()
+    if body is not None and \
+            "response_url" in body:
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": create_select_times_message(),
+            }
+            )
+        )
+
+
+@app.action("time_unselect_all")
+def handle_time_unselect_all(ack, body, client):
+    global TIME_SELECTED_OPTIONS
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
+    ack()
+    TIME_SELECTED_OPTIONS = []
+    for t in TIMES:
+        remove_user_time_preferences(user_id=body["user"]["id"], time=t)
+    if body is not None and \
+            "response_url" in body:
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": create_select_times_message(),
+            }
+            )
+        )
+
+
+@app.action("time_selection")
+def handle_time_selection(ack, body, client):
+    global TIME_SELECTED_OPTIONS
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
+    ack()
+    if body is not None and \
+            "actions" in body:
+        for action in body["actions"]:
+            if "selected_options" in action:
+                remove_user_time_preferences(user_id=body["user"]["id"])
+                TIME_SELECTED_OPTIONS.clear()
+                for selected_option in action["selected_options"]:
+                    t = selected_option["value"]
+                    option = {
+                        "text": {
+                            "type": "plain_text",
+                            "text": t,
+                            "emoji": True
+                        },
+                        "value": t
+                    }
+                    add_user_time_preferences(user_id=body["user"]["id"], time=t)
+                    TIME_SELECTED_OPTIONS.append(option)
+
+
+@app.action("confirm_time_selection")
+def handle_confirm_time(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
+    ack()
+    if body is not None and \
+            "response_url" in body:
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": create_select_restaurant_message(),
+            }
+            )
+        )
+
+
+@app.action("restaurants_select_all")
+def handle_restaurant_select_all(ack, body, client):
+    global RESTAURANTS_SELECTED_OPTIONS
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
+    ack()
+    for r in RESTAURANTS:
+        add_user_restaurant_preferences(user_id=body["user"]["id"], restaurant=r)
+    RESTAURANTS_SELECTED_OPTIONS = RESTAURANTS_ALL_OPTIONS.copy()
+    if body is not None and \
+            "response_url" in body:
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": create_select_restaurant_message(),
+            }
+            )
+        )
+
+
+@app.action("restaurants_unselect_all")
+def handle_restaurant_unselect_all(ack, body, client):
+    global RESTAURANTS_SELECTED_OPTIONS
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
+    ack()
+    RESTAURANTS_SELECTED_OPTIONS = []
+    for r in RESTAURANTS:
+        remove_user_restaurant_preferences(user_id=body["user"]["id"], restaurant=r)
+    if body is not None and \
+            "response_url" in body:
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "replace_original": "true",
+                "blocks": create_select_restaurant_message(),
+            }
+            )
+        )
+
+
+@app.action("restaurants_selection")
+def handle_restaurant_selection(ack, body, client):
+    global RESTAURANTS_SELECTED_OPTIONS
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
+    ack()
+    if body is not None and \
+            "actions" in body:
+        for action in body["actions"]:
+            if "selected_options" in action:
+                remove_user_restaurant_preferences(user_id=body["user"]["id"])
+                RESTAURANTS_SELECTED_OPTIONS.clear()
+                for selected_option in action["selected_options"]:
+                    r = selected_option["value"]
+                    option = {
+                        "text": {
+                            "type": "plain_text",
+                            "text": r,
+                            "emoji": True
+                        },
+                        "value": r
+                    }
+                    add_user_restaurant_preferences(user_id=body["user"]["id"], restaurant=r)
+                    RESTAURANTS_SELECTED_OPTIONS.append(option)
+
+
+@app.action("confirm_restaurants_selection")
+def handle_confirm_restaurant(ack, body, client):
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = client
+    ack()
+    if body is not None and \
+            "response_url" in body:
+        requests.post(
+            url=body["response_url"],
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "delete_original": "true",
+            }
+            )
+        )
+
+        response = client.chat_postMessage(
+            channel=body["user"]["id"],
+            user=body["user"]["id"],
+            text="You are participating!",
+            blocks=create_on_board_message()
+        )
+        if "ok" in response and "ts" in response:
+            add_message_to_participants(
+                message_ts=response["ts"],
+                user_id=body["user"]["id"],
+                channel=response["channel"]
+            )
+
+
 @app.event("message")
 def handle_message_events(body, logger):
     pass
 
-# TODO Command to start each command
 
 
 def main():
