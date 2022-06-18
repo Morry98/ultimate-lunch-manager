@@ -51,11 +51,17 @@ Tested only on python 3.10, it probably works with lower versions.
 
 ## Installation
 
-Todo
+Create a Python virtual environment, activate it and install the
+requirements.  
+For local development, you can install the requirements using the
+scripts `requirements-dev-install.bat` or `requirements-dev-install.sh`,
+depending on your platform.
+
 
 ## Create slack bot
 
-Todo
+Create a Slack App starting from [https://api.slack.com/apps](https://api.slack.com/apps).  
+Give your app a name, and a workspace you will develop the app in.
 
 ## Slack permissions
 
@@ -63,11 +69,23 @@ Todo
 
 ## Get Slack token
 
-Todo
+Go to App-Level Tokens and generate a new token for the app, adding the
+`connections:write` scope.  
+Copy the generated token and use it for the `SLACK_APP_TOKEN` env
+variable.
+
+Go to Socket Mode page and enable it.
+
+Go to OAuth & Permissions page and add the needed OAuth scopes under Bot
+Token Scopes.
+
+Go to Install App page and install the app to your workspace. Copy the
+generated Bot User OAuth Token and use it for the `SLACK_TOKEN_SOCKET`
+env variable.
 
 ## Start Python bot
 
-Set the slack token in the config, run ```python main.py``` and Enjoy!
+Set the Slack tokens in the config, run ```python main.py``` and Enjoy!
 
 # Usage
 
