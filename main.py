@@ -1,21 +1,21 @@
 import datetime
+import json
+import os
 import re
 from typing import Optional
 
 import pytz
-from loguru import logger as log
-import os
 import requests
-import json
-
 from dotenv import load_dotenv
+from loguru import logger as log
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_sdk.web.client import WebClient
 
 from ultimate_lunch_manager.notification_manager import NotificationManager, add_participating_user, \
     remove_participating_user, add_message_to_participants, get_participants_message, add_user_time_preferences, \
-    remove_user_time_preferences, add_user_restaurant_preferences, remove_user_restaurant_preferences
+    remove_user_time_preferences, add_user_restaurant_preferences, remove_user_restaurant_preferences, \
+    get_user_info_from_client
 
 log.level("INFO")
 
@@ -1542,13 +1542,6 @@ def handle_confirm_compute_notification_notification_time(ack, body, client):
     notification_manager.run()
 
 
-def get_user_info_from_client(client, user_id) -> dict:
-    user_info = client.users_info(user=str(user_id))
-    if user_info and "ok" in user_info and user_info["ok"] == True and "user" in user_info:
-        return user_info["user"]
-    return {}
-
-
 def get_timezone_from_user(user: dict) -> str:
     return str(user["tz"]) if user is not None and "tz" in user else PARTICIPANTS_NOTIFICATION_TIMEZONE
 
@@ -1584,7 +1577,7 @@ def handle_confirm_train_participation(ack, body, client):
             client=client,
             user_id=body["user"]["id"]
         )
-        add_participating_user(user_name=user_info["name"], user_id=user_info["id"])
+        add_participating_user(user_id=user_info["id"])
     response = client.chat_postEphemeral(
         channel=CHANNEL_NAME,
         user=body["user"]["id"],
@@ -1603,7 +1596,7 @@ def handle_confirm_train_participation(ack, body, client):
             client=client,
             user_id=body["user"]["id"]
         )
-        add_participating_user(user_name=user_info["name"], user_id=user_info["id"])
+        add_participating_user(user_id=user_info["id"])
     response = client.chat_postMessage(
         channel=body["user"]["id"],
         user=body["user"]["id"],
@@ -1653,7 +1646,7 @@ def handle_reject_train_participation(ack, body, client):
             client=client,
             user_id=body["user"]["id"]
         )
-        remove_participating_user(user_name=user_info["name"], user_id=user_info["id"])
+        remove_participating_user(user_id=user_info["id"])
     response = client.chat_postMessage(
         channel=body["user"]["id"],
         user=body["user"]["id"],
@@ -1703,7 +1696,7 @@ def handle_board_train(ack, body, client):
             client=client,
             user_id=body["user"]["id"]
         )
-        add_participating_user(user_name=user_info["name"], user_id=user_info["id"])
+        add_participating_user(user_id=user_info["id"])
     participants_message = get_participants_message(user_id=body["user"]["id"])
     client.chat_update(
         channel=participants_message[1],
@@ -1724,7 +1717,7 @@ def handle_leave_train(ack, body, client):
             client=client,
             user_id=body["user"]["id"]
         )
-        remove_participating_user(user_name=user_info["name"], user_id=user_info["id"])
+        remove_participating_user(user_id=user_info["id"])
     participants_message = get_participants_message(user_id=body["user"]["id"])
     client.chat_update(
         channel=participants_message[1],
@@ -1959,7 +1952,6 @@ def handle_confirm_restaurant(ack, body, client):
 @app.event("message")
 def handle_message_events(body, logger):
     pass
-
 
 
 def main():
