@@ -4,6 +4,8 @@ from threading import Thread
 from time import sleep
 from typing import Optional, Dict
 
+import pyjokes
+
 TRAINS_EMOJI = [":train2:",
                 ":bullettrain_side:",
                 ":bullettrain_front:",
@@ -47,6 +49,10 @@ RESTAURANT_DISSATISFIED_USERS = []
 def create_participating_message():
     emoji_food = random.choice(FOOD_EMOJI)
     emoji_train = random.choice(TRAINS_EMOJI)
+    if random.randint(0, 100) < 30:
+        joke = pyjokes.get_joke(language="it")
+    else:
+        joke = pyjokes.get_joke()
     return [
         {
             "type": "header",
@@ -54,6 +60,13 @@ def create_participating_message():
                 "type": "plain_text",
                 "text": f"Building up new lunch train {emoji_food}{emoji_train}",
                 "emoji": True
+            }
+        },
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": joke
             }
         },
         {
