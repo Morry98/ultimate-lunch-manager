@@ -1,5 +1,6 @@
 loguru
-python-dotenv
 slack-bolt
 requests
 pytz
+pydantic
+pyjokes
