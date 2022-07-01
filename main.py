@@ -1,31 +1,28 @@
 import datetime
 import json
-import os
 import re
 from typing import Optional
 
 import pytz
 import requests
-from dotenv import load_dotenv
 from loguru import logger as log
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_sdk.web.client import WebClient
 
+from ultimate_lunch_manager.config.config import Config
 from ultimate_lunch_manager.notification_manager import NotificationManager, add_participating_user, \
     remove_participating_user, add_message_to_participants, get_participants_message, add_user_time_preferences, \
     remove_user_time_preferences, add_user_restaurant_preferences, remove_user_restaurant_preferences, \
     get_user_info_from_client
 
-log.level("INFO")
+config = Config()
 
-load_dotenv()
+log.level(config.LOG_LEVEL)
 
-SLACK_APP_TOKEN = os.getenv('SLACK_APP_TOKEN')
-SLACK_TOKEN_SOCKET = os.getenv('SLACK_TOKEN_SOCKET')
 TIME_VALIDATION = re.compile(r"\d\d:\d\d")
 
-app = App(token=SLACK_APP_TOKEN, name="The Ultimate Lunch Manager")
+app = App(token=config.SLACK_APP_TOKEN, name="The Ultimate Lunch Manager")
 
 CLIENT: Optional[WebClient] = None
 CHANNEL_ID = None
@@ -1955,7 +1952,7 @@ def handle_message_events(body, logger):
 
 
 def main():
-    handler = SocketModeHandler(app, SLACK_TOKEN_SOCKET)
+    handler = SocketModeHandler(app, config.SLACK_TOKEN_SOCKET)
     handler.start()
 
 
