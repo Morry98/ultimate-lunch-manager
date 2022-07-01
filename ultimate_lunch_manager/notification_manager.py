@@ -49,7 +49,10 @@ RESTAURANT_DISSATISFIED_USERS = []
 def create_participating_message():
     emoji_food = random.choice(FOOD_EMOJI)
     emoji_train = random.choice(TRAINS_EMOJI)
-    if random.randint(0, 100) < 30:
+    rand_int = random.randint(0, 100)
+    if rand_int < 5:
+        joke = pyjokes.get_joke(category="chuck")
+    elif rand_int < 40:
         joke = pyjokes.get_joke(language="it")
     else:
         joke = pyjokes.get_joke()
