@@ -622,7 +622,7 @@ def create_compute_lunch_notification_config_message():
     ]
 
 
-@app.command("/start")  # TODO: Change command name to be more specific
+@app.command("/start_lunch_manager")
 def repeat_text(ack, respond, command):
     global CHANNEL_ID
     global CHANNEL_NAME
