@@ -9,3 +9,5 @@ class Config(BaseSettings):
     SLACK_TOKEN_SOCKET = str(os.getenv("SLACK_TOKEN_SOCKET", "xapp - 1234"))
 
     LOG_LEVEL = str(os.getenv("LOG_LEVEL", "INFO"))
+
+    DEV_MESSAGES = str(os.getenv("DEV_MESSAGES", "false")).lower().strip() == "true"

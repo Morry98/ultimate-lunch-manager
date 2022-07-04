@@ -6,6 +6,10 @@ from typing import Optional, Dict, List
 
 import pyjokes
 
+from ultimate_lunch_manager.config.config import Config
+
+config = Config()
+
 TRAINS_EMOJI = [":train2:",
                 ":bullettrain_side:",
                 ":bullettrain_front:",
@@ -119,12 +123,25 @@ def create_participating_message():
     ]
 
 
-def close_train_message():
+def close_train_message(client):
     message_text = f"Today the train will start at {SELECTED_TIME} directed to {SELECTED_RESTAURANT}."
     if len(TIME_DISSATISFIED_USERS) > 0:
         message_text += f"\n{TIME_DISSATISFIED_USERS} are not liking the time."
     if len(RESTAURANT_DISSATISFIED_USERS) > 0:
         message_text += f"\n{RESTAURANT_DISSATISFIED_USERS} are not liking the restaurant."
+    if config.DEV_MESSAGES:
+        message_text += "\n\n\n"
+        debug_participating_message = f"user participating:\n"
+        debug_time_pref_message = "\nuser time preferences:\n"
+        debug_rest_pref_message = "\nuser restaurant preferences:\n"
+        for u in USERS_PARTICIPATING:
+            user_name = get_user_info_from_client(client, u)["name"]
+            debug_participating_message += f"- {user_name}\n"
+            debug_time_pref_message += f"- {user_name}: {[x for x in USER_TIME_PREFERENCES[u] if x != '' and x is not None]}\n"
+            debug_rest_pref_message += f"- {user_name}: {[x for x in USER_RESTAURANT_PREFERENCES[u] if x != '' and x is not None]}\n"
+
+        message_text += debug_participating_message + "\n" + debug_time_pref_message + "\n" + debug_rest_pref_message
+
     return [
         {
             "type": "header",
@@ -314,7 +331,7 @@ class NotificationManager(Thread):
                 self.__client.chat_postMessage(
                     channel=self.__train_building_message_channel,
                     text="Closing lunch train",
-                    blocks=close_train_message())
+                    blocks=close_train_message(self.__client))
 
             self.__participants_notification_datetime += datetime.timedelta(days=1)
             while self.get_notification_weekdays()[
