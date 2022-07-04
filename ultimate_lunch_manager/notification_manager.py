@@ -2,7 +2,7 @@ import datetime
 import random
 from threading import Thread
 from time import sleep
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 import pyjokes
 
@@ -34,6 +34,16 @@ FOOD_EMOJI = [":poultry_leg:",
               ":curry:",
               ":panzerotto:",
               ":eggplant:"]
+
+WEEKDAY_NUMBER_TO_STRING: Dict[int, str] = {
+    0: "monday",
+    1: "tuesday",
+    2: "wednesday",
+    3: "thursday",
+    4: "friday",
+    5: "saturday",
+    6: "sunday",
+}
 
 USERS_PARTICIPATING = []
 USERS_NOT_PARTICIPATING = []
@@ -163,7 +173,8 @@ def close_train_message():
 
 class NotificationManager(Thread):
 
-    def __init__(self, client, channel_name, compute_lunch_datetime, participants_notification_datetime):
+    def __init__(self, client, channel_name, compute_lunch_datetime, participants_notification_datetime,
+                 notification_weekdays):
         Thread.__init__(self)
         self.__client = client
         self.__channel_name = channel_name
@@ -173,6 +184,18 @@ class NotificationManager(Thread):
         self.__is_running = False
         self.__train_building_message_ts = None
         self.__train_building_message_channel = None
+
+        self.__notification_weekdays: Dict[str, bool] = {
+            "monday": False,
+            "tuesday": False,
+            "wednesday": False,
+            "thursday": False,
+            "friday": False,
+            "saturday": False,
+            "sunday": False,
+        }
+        for v in notification_weekdays:
+            self.__notification_weekdays[str(v).lower().strip()] = True
         self.t1 = Thread(target=self.task)
 
     def run(self):
@@ -210,71 +233,98 @@ class NotificationManager(Thread):
     def get_compute_lunch_datetime(self):
         return self.__compute_lunch_datetime
 
+    def set_notification_weekdays(self, notification_weekdays: List[str]):
+        self.__notification_weekdays: Dict[str, bool] = {
+            "monday": False,
+            "tuesday": False,
+            "wednesday": False,
+            "thursday": False,
+            "friday": False,
+            "saturday": False,
+            "sunday": False,
+        }
+        for v in notification_weekdays:
+            self.__notification_weekdays[str(v).lower().strip()] = True
+
+    def get_notification_weekdays(self) -> Dict:
+        return self.__notification_weekdays
+
     def task(self):
-        # move to the next day if the current __participants_notification_datetime is in the past
-        time_diff = self.__participants_notification_datetime - datetime.datetime.utcnow()
-        time_diff_seconds = time_diff.total_seconds()
-        while time_diff_seconds < 0:
-            time_diff_seconds += 24 * 60 * 60  # add 24 hours
-            self.__participants_notification_datetime += datetime.timedelta(days=1)
-
-        # move to the next day if the current __compute_lunch_datetime is in the past
-        time_diff = self.__compute_lunch_datetime - datetime.datetime.utcnow()
-        time_diff_seconds = time_diff.total_seconds()
-        while time_diff_seconds < 0:
-            time_diff_seconds += 24 * 60 * 60  # add 24 hours
-            self.__compute_lunch_datetime += datetime.timedelta(days=1)
-
-        # wait until the current __participants_notification_datetime
-        # sleep 1 second then check if __participants_notification_datetime is changed or the task is no more running
-        time_diff = self.__participants_notification_datetime - datetime.datetime.utcnow()
-        time_diff_seconds = time_diff.total_seconds()
-        while time_diff_seconds > 0:
-            if not self.__is_running:
-                return
-            if time_diff_seconds < 0:
-                break
-            sleep(1)
+        while self.is_running():
+            # move to the next day if the current __participants_notification_datetime is in the past
             time_diff = self.__participants_notification_datetime - datetime.datetime.utcnow()
             time_diff_seconds = time_diff.total_seconds()
+            while time_diff_seconds < 0:
+                time_diff_seconds += 24 * 60 * 60  # add 24 hours
+                self.__participants_notification_datetime += datetime.timedelta(days=1)
 
-        # start the train building notification
-        if self.__client is not None and self.__channel_name is not None:
-            response = self.__client.chat_postMessage(
-                channel=self.__channel_name,
-                text="Building up new lunch train",
-                blocks=create_participating_message())
-
-            if "ok" in response and "ts" in response and "channel" in response:
-                self.__train_building_message_ts = response["ts"]
-                self.__train_building_message_channel = response["channel"]
-            else:
-                return None
-
-        # wait until the current __compute_lunch_datetime
-        # sleep 1 second then check if __compute_lunch_datetime is changed or the task is no more running
-        time_diff = self.__compute_lunch_datetime - datetime.datetime.utcnow()
-        time_diff_seconds = time_diff.total_seconds()
-        while time_diff_seconds > 0:
-            if not self.__is_running:
-                return
-            if time_diff_seconds < 0:
-                break
-            sleep(1)
+            # move to the next day if the current __compute_lunch_datetime is in the past
             time_diff = self.__compute_lunch_datetime - datetime.datetime.utcnow()
             time_diff_seconds = time_diff.total_seconds()
+            while time_diff_seconds < 0:
+                time_diff_seconds += 24 * 60 * 60  # add 24 hours
+                self.__compute_lunch_datetime += datetime.timedelta(days=1)
 
-        # Closing the train
-        if self.__client is not None and self.__channel_name is not None:
-            self.__client.chat_delete(
-                channel=self.__train_building_message_channel,
-                ts=self.__train_building_message_ts
-            )
-            _compute_selected_parameters(self.__client)
-            self.__client.chat_postMessage(
-                channel=self.__train_building_message_channel,
-                text="Closing lunch train",
-                blocks=close_train_message())
+            # wait until the current __participants_notification_datetime
+            # sleep 1 second then check if __participants_notification_datetime is changed or the task is no more running
+            time_diff = self.__participants_notification_datetime - datetime.datetime.utcnow()
+            time_diff_seconds = time_diff.total_seconds()
+            while time_diff_seconds > 0:
+                if not self.__is_running:
+                    return
+                if time_diff_seconds < 0:
+                    break
+                sleep(1)
+                time_diff = self.__participants_notification_datetime - datetime.datetime.utcnow()
+                time_diff_seconds = time_diff.total_seconds()
+
+            # start the train building notification
+            if self.__client is not None and self.__channel_name is not None:
+                response = self.__client.chat_postMessage(
+                    channel=self.__channel_name,
+                    text="Building up new lunch train",
+                    blocks=create_participating_message())
+
+                if "ok" in response and "ts" in response and "channel" in response:
+                    self.__train_building_message_ts = response["ts"]
+                    self.__train_building_message_channel = response["channel"]
+                else:
+                    return None
+
+            # wait until the current __compute_lunch_datetime
+            # sleep 1 second then check if __compute_lunch_datetime is changed or the task is no more running
+            time_diff = self.__compute_lunch_datetime - datetime.datetime.utcnow()
+            time_diff_seconds = time_diff.total_seconds()
+            while time_diff_seconds > 0:
+                if not self.__is_running:
+                    return
+                if time_diff_seconds < 0:
+                    break
+                sleep(1)
+                time_diff = self.__compute_lunch_datetime - datetime.datetime.utcnow()
+                time_diff_seconds = time_diff.total_seconds()
+
+            # Closing the train
+            if self.__client is not None and self.__channel_name is not None:
+                self.__client.chat_delete(
+                    channel=self.__train_building_message_channel,
+                    ts=self.__train_building_message_ts
+                )
+                _compute_selected_parameters(self.__client)
+                self.__client.chat_postMessage(
+                    channel=self.__train_building_message_channel,
+                    text="Closing lunch train",
+                    blocks=close_train_message())
+
+            self.__participants_notification_datetime += datetime.timedelta(days=1)
+            while self.get_notification_weekdays()[
+                WEEKDAY_NUMBER_TO_STRING[self.__participants_notification_datetime.weekday()]] is False:
+                self.__participants_notification_datetime += datetime.timedelta(days=1)
+
+            self.__compute_lunch_datetime += datetime.timedelta(days=1)
+            while self.get_notification_weekdays()[
+                WEEKDAY_NUMBER_TO_STRING[self.__compute_lunch_datetime.weekday()]] is False:
+                self.__compute_lunch_datetime += datetime.timedelta(days=1)
 
 
 def add_participating_user(user_id):

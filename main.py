@@ -1418,7 +1418,6 @@ def handle_confirm_notification_days(ack, body, client):
     ack()
     if body is not None and \
             "response_url" in body:
-        NOTIFICATION_DAYS.clear()
         requests.post(
             url=body["response_url"],
             headers={"Content-Type": "application/json"},
@@ -1534,7 +1533,8 @@ def handle_confirm_compute_notification_notification_time(ack, body, client):
         participants_notification_datetime=convert_time_string_to_utc_datetime(time=PARTICIPANTS_NOTIFICATION_TIME,
                                                                                timezone=PARTICIPANTS_NOTIFICATION_TIMEZONE),
         compute_lunch_datetime=convert_time_string_to_utc_datetime(time=COMPUTE_LUNCH_TIME,
-                                                                   timezone=COMPUTE_LUNCH_TIMEZONE)
+                                                                   timezone=COMPUTE_LUNCH_TIMEZONE),
+        notification_weekdays=NOTIFICATION_DAYS
     )
     notification_manager.run()
 
