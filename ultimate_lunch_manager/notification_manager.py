@@ -350,7 +350,8 @@ class NotificationManager(Thread):
 
 
 def add_participating_user(user_id):
-    USERS_PARTICIPATING.append(user_id)
+    if user_id not in USERS_PARTICIPATING:
+        USERS_PARTICIPATING.append(user_id)
     if user_id in USERS_NOT_PARTICIPATING:
         USERS_NOT_PARTICIPATING.remove(user_id)
     if user_id not in USER_RESTAURANT_PREFERENCES:
@@ -362,7 +363,8 @@ def add_participating_user(user_id):
 def remove_participating_user(user_id):
     if user_id in USERS_PARTICIPATING:
         USERS_PARTICIPATING.remove(user_id)
-    USERS_NOT_PARTICIPATING.append(user_id)
+    if user_id not in USERS_NOT_PARTICIPATING:
+        USERS_NOT_PARTICIPATING.append(user_id)
 
 
 def add_message_to_participants(message_ts, user_id, channel):
@@ -370,35 +372,37 @@ def add_message_to_participants(message_ts, user_id, channel):
 
 
 def get_participants_message(user_id):
-    return PARTICIPANTS_PRIVATE_MESSAGES[user_id]
+    if user_id in PARTICIPANTS_PRIVATE_MESSAGES:
+        return PARTICIPANTS_PRIVATE_MESSAGES[user_id]
+    return None
 
 
 def add_user_time_preferences(user_id, time):
     if user_id not in USER_TIME_PREFERENCES:
         USER_TIME_PREFERENCES[user_id] = []
-    USER_TIME_PREFERENCES[user_id].append(time)
+    if time not in USER_TIME_PREFERENCES[user_id]:
+        USER_TIME_PREFERENCES[user_id].append(time)
 
 
 def remove_user_time_preferences(user_id, time: Optional[str] = None):
-    if user_id in USER_TIME_PREFERENCES:
-        if time is None:
-            USER_TIME_PREFERENCES.pop(user_id)
-        elif time in USER_TIME_PREFERENCES[user_id]:
-            USER_TIME_PREFERENCES[user_id].remove(time)
+    if time is None or user_id in USER_TIME_PREFERENCES:
+        USER_TIME_PREFERENCES[user_id] = []
+    if time in USER_TIME_PREFERENCES[user_id]:
+        USER_TIME_PREFERENCES[user_id].remove(time)
 
 
 def add_user_restaurant_preferences(user_id, restaurant):
     if user_id not in USER_RESTAURANT_PREFERENCES:
         USER_RESTAURANT_PREFERENCES[user_id] = []
-    USER_RESTAURANT_PREFERENCES[user_id].append(restaurant)
+    if restaurant not in USER_RESTAURANT_PREFERENCES[user_id]:
+        USER_RESTAURANT_PREFERENCES[user_id].append(restaurant)
 
 
 def remove_user_restaurant_preferences(user_id, restaurant: Optional[str] = None):
-    if user_id in USER_RESTAURANT_PREFERENCES:
-        if restaurant is None:
-            USER_RESTAURANT_PREFERENCES.pop(user_id)
-        elif restaurant in USER_RESTAURANT_PREFERENCES[user_id]:
-            USER_RESTAURANT_PREFERENCES[user_id].remove(restaurant)
+    if restaurant is None or user_id not in USER_RESTAURANT_PREFERENCES:
+        USER_RESTAURANT_PREFERENCES[user_id] = []
+    if restaurant in USER_RESTAURANT_PREFERENCES[user_id]:
+        USER_RESTAURANT_PREFERENCES[user_id].remove(restaurant)
 
 
 def _compute_selected_parameters(client) -> None:

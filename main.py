@@ -1695,13 +1695,14 @@ def handle_board_train(ack, body, client):
         )
         add_participating_user(user_id=user_info["id"])
     participants_message = get_participants_message(user_id=body["user"]["id"])
-    client.chat_update(
-        channel=participants_message[1],
-        user=body["user"]["id"],
-        ts=participants_message[0],
-        text="You are participating!",
-        blocks=create_on_board_message()
-    )
+    if participants_message is not None:
+        client.chat_update(
+            channel=participants_message[1],
+            user=body["user"]["id"],
+            ts=participants_message[0],
+            text="You are participating!",
+            blocks=create_on_board_message()
+        )
 
 
 @app.action("leave_train")
@@ -1716,38 +1717,39 @@ def handle_leave_train(ack, body, client):
         )
         remove_participating_user(user_id=user_info["id"])
     participants_message = get_participants_message(user_id=body["user"]["id"])
-    client.chat_update(
-        channel=participants_message[1],
-        user=body["user"]["id"],
-        ts=participants_message[0],
-        text="You are not participating!",
-        blocks=[
-            {
-                "type": "header",
-                "text": {
-                    "type": "plain_text",
-                    "text": "You are not participating to train :smiling_face_with_tear:",
-                    "emoji": True
-                }
-            },
-            {
-                "type": "actions",
-                "elements": [
-                    {
-                        "type": "button",
-                        "text": {
-                            "type": "plain_text",
-                            "text": "Board the train!",
-                            "emoji": True
-                        },
-                        "style": "primary",
-                        "value": "train_participation",
-                        "action_id": "board_train"
+    if participants_message is not None:
+        client.chat_update(
+            channel=participants_message[1],
+            user=body["user"]["id"],
+            ts=participants_message[0],
+            text="You are not participating!",
+            blocks=[
+                {
+                    "type": "header",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "You are not participating to train :smiling_face_with_tear:",
+                        "emoji": True
                     }
-                ]
-            }
-        ]
-    )
+                },
+                {
+                    "type": "actions",
+                    "elements": [
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Board the train!",
+                                "emoji": True
+                            },
+                            "style": "primary",
+                            "value": "train_participation",
+                            "action_id": "board_train"
+                        }
+                    ]
+                }
+            ]
+        )
 
 
 @app.action("time_select_all")
