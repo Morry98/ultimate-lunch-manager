@@ -4,6 +4,7 @@ from threading import Thread
 from time import sleep
 from typing import Optional, Dict, List
 
+import loguru
 import pyjokes
 
 from ultimate_lunch_manager.config.config import Config
@@ -295,18 +296,19 @@ class NotificationManager(Thread):
                 time_diff = self.__participants_notification_datetime - datetime.datetime.utcnow()
                 time_diff_seconds = time_diff.total_seconds()
 
-            # start the train building notification
-            if self.__client is not None and self.__channel_name is not None:
-                response = self.__client.chat_postMessage(
-                    channel=self.__channel_name,
-                    text="Building up new lunch train",
-                    blocks=create_participating_message())
+            try:
+                # start the train building notification
+                if self.__client is not None and self.__channel_name is not None:
+                    response = self.__client.chat_postMessage(
+                        channel=self.__channel_name,
+                        text="Building up new lunch train",
+                        blocks=create_participating_message())
 
-                if "ok" in response and "ts" in response and "channel" in response:
-                    self.__train_building_message_ts = response["ts"]
-                    self.__train_building_message_channel = response["channel"]
-                else:
-                    return None
+                    if "ok" in response and "ts" in response and "channel" in response:
+                        self.__train_building_message_ts = response["ts"]
+                        self.__train_building_message_channel = response["channel"]
+            except Exception as e:
+                loguru.logger.error(e)
 
             # wait until the current __compute_lunch_datetime
             # sleep 1 second then check if __compute_lunch_datetime is changed or the task is no more running
@@ -321,17 +323,20 @@ class NotificationManager(Thread):
                 time_diff = self.__compute_lunch_datetime - datetime.datetime.utcnow()
                 time_diff_seconds = time_diff.total_seconds()
 
-            # Closing the train
-            if self.__client is not None and self.__channel_name is not None:
-                self.__client.chat_delete(
-                    channel=self.__train_building_message_channel,
-                    ts=self.__train_building_message_ts
-                )
-                _compute_selected_parameters(self.__client)
-                self.__client.chat_postMessage(
-                    channel=self.__train_building_message_channel,
-                    text="Closing lunch train",
-                    blocks=close_train_message(self.__client))
+            try:
+                # Closing the train
+                if self.__client is not None and self.__channel_name is not None:
+                    self.__client.chat_delete(
+                        channel=self.__train_building_message_channel,
+                        ts=self.__train_building_message_ts
+                    )
+                    _compute_selected_parameters(self.__client)
+                    self.__client.chat_postMessage(
+                        channel=self.__train_building_message_channel,
+                        text="Closing lunch train",
+                        blocks=close_train_message(self.__client))
+            except Exception as e:
+                loguru.logger.error(e)
 
             self.__participants_notification_datetime += datetime.timedelta(days=1)
             while self.get_notification_weekdays()[
@@ -348,6 +353,10 @@ def add_participating_user(user_id):
     USERS_PARTICIPATING.append(user_id)
     if user_id in USERS_NOT_PARTICIPATING:
         USERS_NOT_PARTICIPATING.remove(user_id)
+    if user_id not in USER_RESTAURANT_PREFERENCES:
+        USER_RESTAURANT_PREFERENCES[user_id] = []
+    if user_id not in USER_TIME_PREFERENCES:
+        USER_TIME_PREFERENCES[user_id] = []
 
 
 def remove_participating_user(user_id):
