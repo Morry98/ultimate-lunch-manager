@@ -268,6 +268,15 @@ class NotificationManager(Thread):
         return self.__notification_weekdays
 
     def task(self):
+        global USERS_PARTICIPATING
+        global USERS_NOT_PARTICIPATING
+        global USER_TIME_PREFERENCES
+        global USER_RESTAURANT_PREFERENCES
+        global PARTICIPANTS_PRIVATE_MESSAGES
+        global SELECTED_TIME
+        global SELECTED_RESTAURANT
+        global TIME_DISSATISFIED_USERS
+        global RESTAURANT_DISSATISFIED_USERS
         while self.is_running():
             # move to the next day if the current __participants_notification_datetime is in the past
             time_diff = self.__participants_notification_datetime - datetime.datetime.utcnow()
@@ -285,6 +294,7 @@ class NotificationManager(Thread):
 
             # wait until the current __participants_notification_datetime
             # sleep 1 second then check if __participants_notification_datetime is changed or the task is no more running
+
             time_diff = self.__participants_notification_datetime - datetime.datetime.utcnow()
             time_diff_seconds = time_diff.total_seconds()
             while time_diff_seconds > 0:
@@ -312,6 +322,7 @@ class NotificationManager(Thread):
 
             # wait until the current __compute_lunch_datetime
             # sleep 1 second then check if __compute_lunch_datetime is changed or the task is no more running
+
             time_diff = self.__compute_lunch_datetime - datetime.datetime.utcnow()
             time_diff_seconds = time_diff.total_seconds()
             while time_diff_seconds > 0:
@@ -347,6 +358,16 @@ class NotificationManager(Thread):
             while self.get_notification_weekdays()[
                 WEEKDAY_NUMBER_TO_STRING[self.__compute_lunch_datetime.weekday()]] is False:
                 self.__compute_lunch_datetime += datetime.timedelta(days=1)
+
+            USERS_PARTICIPATING = []
+            USERS_NOT_PARTICIPATING = []
+            USER_TIME_PREFERENCES = {}
+            USER_RESTAURANT_PREFERENCES = {}
+            PARTICIPANTS_PRIVATE_MESSAGES = {}
+            SELECTED_TIME = None
+            SELECTED_RESTAURANT = None
+            TIME_DISSATISFIED_USERS = []
+            RESTAURANT_DISSATISFIED_USERS = []
 
 
 def add_participating_user(user_id):
@@ -434,30 +455,27 @@ def _compute_selected_parameters(client) -> None:
                 restaurant_preferences_score[restaurant] = 0
             restaurant_preferences_score[restaurant] += 1
 
-    if len(time_preferences_score) == 0 or len(restaurant_preferences_score) == 0:
-        return
+    if len(time_preferences_score) > 0:
+        time_preference = sorted(time_preferences_score.items(), key=lambda x: x[1], reverse=True)[0]
+        time_dissatisfied_users_local = []
+        if int(time_preference[1]) < user_count:
+            # find users that hadn't selected the time preference
+            for user, time_preferences in USER_TIME_PREFERENCES.items():
+                if time_preference[0] not in time_preferences:
+                    time_dissatisfied_users_local.append(get_user_info_from_client(client, user)["name"])
+        SELECTED_TIME = time_preference[0]
+        TIME_DISSATISFIED_USERS = time_dissatisfied_users_local
 
-    # sort the time preferences
-    time_preference = sorted(time_preferences_score.items(), key=lambda x: x[1], reverse=True)[0]
-    restaurant_preference = sorted(restaurant_preferences_score.items(), key=lambda x: x[1], reverse=True)[0]
-
-    time_dissatisfied_users_local = []
-    restaurant_dissatisfied_users_local = []
-    if int(time_preference[1]) < user_count:
-        # find users that hadn't selected the time preference
-        for user, time_preferences in USER_TIME_PREFERENCES.items():
-            if time_preference[0] not in time_preferences:
-                time_dissatisfied_users_local.append(get_user_info_from_client(client, user)["name"])
-    if int(restaurant_preference[1]) < user_count:
-        # find users that hadn't selected the restaurant preference
-        for user, restaurant_preferences in USER_RESTAURANT_PREFERENCES.items():
-            if restaurant_preference[0] not in restaurant_preferences:
-                restaurant_dissatisfied_users_local.append(get_user_info_from_client(client, user)["name"])
-
-    SELECTED_TIME = time_preference[0]
-    SELECTED_RESTAURANT = restaurant_preference[0]
-    TIME_DISSATISFIED_USERS = time_dissatisfied_users_local
-    RESTAURANT_DISSATISFIED_USERS = restaurant_dissatisfied_users_local
+    if len(restaurant_preferences_score) > 0:
+        restaurant_preference = sorted(restaurant_preferences_score.items(), key=lambda x: x[1], reverse=True)[0]
+        restaurant_dissatisfied_users_local = []
+        if int(restaurant_preference[1]) < user_count:
+            # find users that hadn't selected the restaurant preference
+            for user, restaurant_preferences in USER_RESTAURANT_PREFERENCES.items():
+                if restaurant_preference[0] not in restaurant_preferences:
+                    restaurant_dissatisfied_users_local.append(get_user_info_from_client(client, user)["name"])
+        SELECTED_RESTAURANT = restaurant_preference[0]
+        RESTAURANT_DISSATISFIED_USERS = restaurant_dissatisfied_users_local
     return
 
 
