@@ -4,6 +4,8 @@ charset-normalizer==2.1.0
     # via requests
 colorama==0.4.5
     # via loguru
+greenlet==1.1.2
+    # via sqlalchemy
 idna==3.3
     # via requests
 loguru==0.6.0
@@ -20,6 +22,8 @@ slack-bolt==1.14.3
     # via -r requirements.in
 slack-sdk==3.18.1
     # via slack-bolt
+sqlalchemy==1.4.40
+    # via -r requirements.in
 typing-extensions==4.3.0
     # via pydantic
 urllib3==1.26.11
