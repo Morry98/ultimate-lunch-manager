@@ -21,3 +21,5 @@ htmlcov
 
 .pytest_cache
 .mypy_cache
+
+liquibase.properties

@@ -1,0 +1,133 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        logicalFilePath="classpath:changelog-master.xml"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet author="Matteo Morando" id="1">
+        <createTable tableName="restaurants">
+            <column autoIncrement="true" name="id_restaurant" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="restaurants_pkey"/>
+            </column>
+            <column name="name" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="priority" type="INT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="creation_date_utc" type="TIMESTAMP WITHOUT TIME ZONE"
+                    defaultValueComputed="(now() at time zone 'utc')">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet author="Matteo Morando" id="2">
+        <createTable tableName="possible_times">
+            <column autoIncrement="true" name="id_possible_time" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="possible_times_pkey"/>
+            </column>
+            <column name="time" type="VARCHAR(5)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="priority" type="INT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="creation_date_utc" type="TIMESTAMP WITHOUT TIME ZONE"
+                    defaultValueComputed="(now() at time zone 'utc')">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet author="Matteo Morando" id="3">
+        <createTable tableName="users">
+            <column autoIncrement="true" name="id_user" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="users_pkey"/>
+            </column>
+            <column name="slack_user_id" type="VARCHAR(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_participating" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="creation_date_utc" type="TIMESTAMP WITHOUT TIME ZONE"
+                    defaultValueComputed="(now() at time zone 'utc')">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet author="Matteo Morando" id="4">
+        <createTable tableName="user_restaurant_selections">
+            <column autoIncrement="true" name="id_user_restaurant_selection" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="user_restaurant_selections_pkey"/>
+            </column>
+            <column name="id_user" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="id_restaurant" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+
+    <changeSet author="Matteo Morando" id="5">
+        <addForeignKeyConstraint baseColumnNames="id_user" baseTableName="user_restaurant_selections"
+                                 constraintName="user_restaurant_selections_id_user_fkey" deferrable="false"
+                                 initiallyDeferred="false" onDelete="CASCADE" onUpdate="CASCADE"
+                                 referencedColumnNames="id_user" referencedTableName="users" validate="true"/>
+        <addForeignKeyConstraint baseColumnNames="id_restaurant" baseTableName="user_restaurant_selections"
+                                 constraintName="user_restaurant_selections_id_restaurant_fkey" deferrable="false"
+                                 initiallyDeferred="false" onDelete="CASCADE" onUpdate="CASCADE"
+                                 referencedColumnNames="id_restaurant" referencedTableName="restaurants"
+                                 validate="true"/>
+    </changeSet>
+
+
+    <changeSet author="Matteo Morando" id="6">
+        <createTable tableName="user_time_selections">
+            <column autoIncrement="true" name="id_user_time_selection" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="user_time_selections_pkey"/>
+            </column>
+            <column name="id_user" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="id_possible_time" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+
+    <changeSet author="Matteo Morando" id="7">
+        <addForeignKeyConstraint baseColumnNames="id_user" baseTableName="user_time_selections"
+                                 constraintName="user_time_selections_id_user_fkey" deferrable="false"
+                                 initiallyDeferred="false" onDelete="CASCADE" onUpdate="CASCADE"
+                                 referencedColumnNames="id_user" referencedTableName="users" validate="true"/>
+        <addForeignKeyConstraint baseColumnNames="id_possible_time" baseTableName="user_time_selections"
+                                 constraintName="user_time_selections_id_possible_time_fkey" deferrable="false"
+                                 initiallyDeferred="false" onDelete="CASCADE" onUpdate="CASCADE"
+                                 referencedColumnNames="id_possible_time" referencedTableName="possible_times"
+                                 validate="true"/>
+    </changeSet>
+
+    <changeSet author="Matteo Morando" id="8">
+        <createTable tableName="settings">
+            <column autoIncrement="true" name="id_settings" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="settings_pkey"/>
+            </column>
+            <column name="participants_notification_time" type="VARCHAR(5)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lunch_notification_time" type="VARCHAR(5)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <includeAll path="./db/changelog/general/"/>
+</databaseChangeLog>
