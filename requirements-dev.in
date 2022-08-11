@@ -4,3 +4,4 @@ mypy-extensions
 coverage
 pytest
 pip-tools
+black

@@ -3,6 +3,9 @@ echo "Installing dependencies"
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
 
+echo "Auto formatting code with black"
+black ultimate_lunch_manager main.py
+
 echo "Run linting"
 flake8 ultimate_lunch_manager main.py || goto :error
 

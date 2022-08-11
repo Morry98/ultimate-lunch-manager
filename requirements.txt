@@ -8,7 +8,7 @@ idna==3.3
     # via requests
 loguru==0.6.0
     # via -r requirements.in
-pydantic==1.9.1
+pydantic==1.9.2
     # via -r requirements.in
 pyjokes==0.6.0
     # via -r requirements.in
@@ -16,13 +16,13 @@ pytz==2022.1
     # via -r requirements.in
 requests==2.28.1
     # via -r requirements.in
-slack-bolt==1.14.0
+slack-bolt==1.14.3
     # via -r requirements.in
-slack-sdk==3.17.2
+slack-sdk==3.18.1
     # via slack-bolt
 typing-extensions==4.3.0
     # via pydantic
-urllib3==1.26.9
+urllib3==1.26.11
     # via requests
 win32-setctime==1.1.0
     # via loguru
