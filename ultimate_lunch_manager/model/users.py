@@ -1,7 +1,8 @@
 import datetime
 
-from app.main.database import Base
 from sqlalchemy import Column, String, Integer, Boolean, DateTime
+
+from ultimate_lunch_manager.database import Base
 
 
 class Users(Base):
