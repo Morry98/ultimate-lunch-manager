@@ -11,34 +11,38 @@ from ultimate_lunch_manager.config.config import Config
 
 config = Config()
 
-TRAINS_EMOJI = [":train2:",
-                ":bullettrain_side:",
-                ":bullettrain_front:",
-                ":light_rail:",
-                ":station:",
-                ":tram:",
-                ":monorail:", ]
+TRAINS_EMOJI = [
+    ":train2:",
+    ":bullettrain_side:",
+    ":bullettrain_front:",
+    ":light_rail:",
+    ":station:",
+    ":tram:",
+    ":monorail:",
+]
 
-FOOD_EMOJI = [":poultry_leg:",
-              ":hamburger:",
-              ":pizza:",
-              ":hotdog:",
-              ":sandwich:",
-              ":taco:",
-              ":burrito:",
-              ":tamale:",
-              ":falafel:",
-              ":fried_egg:",
-              ":fondue:",
-              ":cucumber:",
-              ":shallow_pan_of_food:",
-              ":spaghetti:",
-              ":sushi:",
-              ":ramen:",
-              ":bento:",
-              ":curry:",
-              ":panzerotto:",
-              ":eggplant:"]
+FOOD_EMOJI = [
+    ":poultry_leg:",
+    ":hamburger:",
+    ":pizza:",
+    ":hotdog:",
+    ":sandwich:",
+    ":taco:",
+    ":burrito:",
+    ":tamale:",
+    ":falafel:",
+    ":fried_egg:",
+    ":fondue:",
+    ":cucumber:",
+    ":shallow_pan_of_food:",
+    ":spaghetti:",
+    ":sushi:",
+    ":ramen:",
+    ":bento:",
+    ":curry:",
+    ":panzerotto:",
+    ":eggplant:",
+]
 
 WEEKDAY_NUMBER_TO_STRING: Dict[int, str] = {
     0: "monday",
@@ -77,50 +81,37 @@ def create_participating_message():
             "text": {
                 "type": "plain_text",
                 "text": f"Building up new lunch train {emoji_food}{emoji_train}",
-                "emoji": True
-            }
+                "emoji": True,
+            },
         },
+        {"type": "section", "text": {"type": "mrkdwn", "text": joke}},
         {
             "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": joke
-            }
-        },
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": "Today are you coming to lunch?"
-            }
+            "text": {"type": "mrkdwn", "text": "Today are you coming to lunch?"},
         },
         {
             "type": "actions",
             "elements": [
                 {
                     "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": "Sure!",
-                        "emoji": True
-                    },
+                    "text": {"type": "plain_text", "text": "Sure!", "emoji": True},
                     "style": "primary",
                     "value": "train_participation",
-                    "action_id": "confirm_train_participation"
+                    "action_id": "confirm_train_participation",
                 },
                 {
                     "type": "button",
                     "text": {
                         "type": "plain_text",
                         "text": "No I hate you!",
-                        "emoji": True
+                        "emoji": True,
                     },
                     "style": "danger",
                     "value": "train_participation",
-                    "action_id": "reject_train_participation"
-                }
-            ]
-        }
+                    "action_id": "reject_train_participation",
+                },
+            ],
+        },
     ]
 
 
@@ -129,7 +120,9 @@ def close_train_message(client):
     if len(TIME_DISSATISFIED_USERS) > 0:
         message_text += f"\n{TIME_DISSATISFIED_USERS} are not liking the time."
     if len(RESTAURANT_DISSATISFIED_USERS) > 0:
-        message_text += f"\n{RESTAURANT_DISSATISFIED_USERS} are not liking the restaurant."
+        message_text += (
+            f"\n{RESTAURANT_DISSATISFIED_USERS} are not liking the restaurant."
+        )
     if config.DEV_MESSAGES:
         message_text += "\n\n\n"
         debug_participating_message = f"user participating:\n"
@@ -141,7 +134,13 @@ def close_train_message(client):
             debug_time_pref_message += f"- {user_name}: {[x for x in USER_TIME_PREFERENCES[u] if x != '' and x is not None]}\n"
             debug_rest_pref_message += f"- {user_name}: {[x for x in USER_RESTAURANT_PREFERENCES[u] if x != '' and x is not None]}\n"
 
-        message_text += debug_participating_message + "\n" + debug_time_pref_message + "\n" + debug_rest_pref_message
+        message_text += (
+            debug_participating_message
+            + "\n"
+            + debug_time_pref_message
+            + "\n"
+            + debug_rest_pref_message
+        )
 
     return [
         {
@@ -149,50 +148,45 @@ def close_train_message(client):
             "text": {
                 "type": "plain_text",
                 "text": ":warning:The train is closed! Booking needed:warning:",
-                "emoji": True
-            }
+                "emoji": True,
+            },
         },
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": message_text
-            }
-        },
+        {"type": "section", "text": {"type": "mrkdwn", "text": message_text}},
         {
             "type": "actions",
             "elements": [
                 {
                     "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": "Booking...",
-                        "emoji": True
-                    },
+                    "text": {"type": "plain_text", "text": "Booking...", "emoji": True},
                     "style": "primary",
                     "value": "train_booking",
-                    "action_id": "confirm_train_booking"
+                    "action_id": "confirm_train_booking",
                 },
                 {
                     "type": "button",
                     "text": {
                         "type": "plain_text",
                         "text": "Booking problems",
-                        "emoji": True
+                        "emoji": True,
                     },
                     "style": "danger",
                     "value": "train_booking_problems",
-                    "action_id": "confirm_train_booking_problems"
-                }
-            ]
-        }
+                    "action_id": "confirm_train_booking_problems",
+                },
+            ],
+        },
     ]
 
 
 class NotificationManager(Thread):
-
-    def __init__(self, client, channel_name, compute_lunch_datetime, participants_notification_datetime,
-                 notification_weekdays):
+    def __init__(
+        self,
+        client,
+        channel_name,
+        compute_lunch_datetime,
+        participants_notification_datetime,
+        notification_weekdays,
+    ):
         Thread.__init__(self)
         self.__client = client
         self.__channel_name = channel_name
@@ -242,7 +236,9 @@ class NotificationManager(Thread):
     def set_compute_lunch_datetime(self, compute_lunch_datetime):
         self.__compute_lunch_datetime = compute_lunch_datetime
 
-    def set_participants_notification_datetime(self, participants_notification_datetime):
+    def set_participants_notification_datetime(
+        self, participants_notification_datetime
+    ):
         self.__participants_notification_datetime = participants_notification_datetime
 
     def get_participants_notification_datetime(self):
@@ -279,7 +275,9 @@ class NotificationManager(Thread):
         global RESTAURANT_DISSATISFIED_USERS
         while self.is_running():
             # move to the next day if the current __participants_notification_datetime is in the past
-            time_diff = self.__participants_notification_datetime - datetime.datetime.utcnow()
+            time_diff = (
+                self.__participants_notification_datetime - datetime.datetime.utcnow()
+            )
             time_diff_seconds = time_diff.total_seconds()
             while time_diff_seconds < 0:
                 time_diff_seconds += 24 * 60 * 60  # add 24 hours
@@ -295,7 +293,9 @@ class NotificationManager(Thread):
             # wait until the current __participants_notification_datetime
             # sleep 1 second then check if __participants_notification_datetime is changed or the task is no more running
 
-            time_diff = self.__participants_notification_datetime - datetime.datetime.utcnow()
+            time_diff = (
+                self.__participants_notification_datetime - datetime.datetime.utcnow()
+            )
             time_diff_seconds = time_diff.total_seconds()
             while time_diff_seconds > 0:
                 if not self.__is_running:
@@ -303,7 +303,10 @@ class NotificationManager(Thread):
                 if time_diff_seconds < 0:
                     break
                 sleep(1)
-                time_diff = self.__participants_notification_datetime - datetime.datetime.utcnow()
+                time_diff = (
+                    self.__participants_notification_datetime
+                    - datetime.datetime.utcnow()
+                )
                 time_diff_seconds = time_diff.total_seconds()
 
             try:
@@ -312,7 +315,8 @@ class NotificationManager(Thread):
                     response = self.__client.chat_postMessage(
                         channel=self.__channel_name,
                         text="Building up new lunch train",
-                        blocks=create_participating_message())
+                        blocks=create_participating_message(),
+                    )
 
                     if "ok" in response and "ts" in response and "channel" in response:
                         self.__train_building_message_ts = response["ts"]
@@ -339,24 +343,35 @@ class NotificationManager(Thread):
                 if self.__client is not None and self.__channel_name is not None:
                     self.__client.chat_delete(
                         channel=self.__train_building_message_channel,
-                        ts=self.__train_building_message_ts
+                        ts=self.__train_building_message_ts,
                     )
                     _compute_selected_parameters(self.__client)
                     self.__client.chat_postMessage(
                         channel=self.__train_building_message_channel,
                         text="Closing lunch train",
-                        blocks=close_train_message(self.__client))
+                        blocks=close_train_message(self.__client),
+                    )
             except Exception as e:
                 loguru.logger.error(e)
 
             self.__participants_notification_datetime += datetime.timedelta(days=1)
-            while self.get_notification_weekdays()[
-                WEEKDAY_NUMBER_TO_STRING[self.__participants_notification_datetime.weekday()]] is False:
+            while (
+                self.get_notification_weekdays()[
+                    WEEKDAY_NUMBER_TO_STRING[
+                        self.__participants_notification_datetime.weekday()
+                    ]
+                ]
+                is False
+            ):
                 self.__participants_notification_datetime += datetime.timedelta(days=1)
 
             self.__compute_lunch_datetime += datetime.timedelta(days=1)
-            while self.get_notification_weekdays()[
-                WEEKDAY_NUMBER_TO_STRING[self.__compute_lunch_datetime.weekday()]] is False:
+            while (
+                self.get_notification_weekdays()[
+                    WEEKDAY_NUMBER_TO_STRING[self.__compute_lunch_datetime.weekday()]
+                ]
+                is False
+            ):
                 self.__compute_lunch_datetime += datetime.timedelta(days=1)
 
             USERS_PARTICIPATING = []
@@ -456,24 +471,32 @@ def _compute_selected_parameters(client) -> None:
             restaurant_preferences_score[restaurant] += 1
 
     if len(time_preferences_score) > 0:
-        time_preference = sorted(time_preferences_score.items(), key=lambda x: x[1], reverse=True)[0]
+        time_preference = sorted(
+            time_preferences_score.items(), key=lambda x: x[1], reverse=True
+        )[0]
         time_dissatisfied_users_local = []
         if int(time_preference[1]) < user_count:
             # find users that hadn't selected the time preference
             for user, time_preferences in USER_TIME_PREFERENCES.items():
                 if time_preference[0] not in time_preferences:
-                    time_dissatisfied_users_local.append(get_user_info_from_client(client, user)["name"])
+                    time_dissatisfied_users_local.append(
+                        get_user_info_from_client(client, user)["name"]
+                    )
         SELECTED_TIME = time_preference[0]
         TIME_DISSATISFIED_USERS = time_dissatisfied_users_local
 
     if len(restaurant_preferences_score) > 0:
-        restaurant_preference = sorted(restaurant_preferences_score.items(), key=lambda x: x[1], reverse=True)[0]
+        restaurant_preference = sorted(
+            restaurant_preferences_score.items(), key=lambda x: x[1], reverse=True
+        )[0]
         restaurant_dissatisfied_users_local = []
         if int(restaurant_preference[1]) < user_count:
             # find users that hadn't selected the restaurant preference
             for user, restaurant_preferences in USER_RESTAURANT_PREFERENCES.items():
                 if restaurant_preference[0] not in restaurant_preferences:
-                    restaurant_dissatisfied_users_local.append(get_user_info_from_client(client, user)["name"])
+                    restaurant_dissatisfied_users_local.append(
+                        get_user_info_from_client(client, user)["name"]
+                    )
         SELECTED_RESTAURANT = restaurant_preference[0]
         RESTAURANT_DISSATISFIED_USERS = restaurant_dissatisfied_users_local
     return
@@ -481,6 +504,11 @@ def _compute_selected_parameters(client) -> None:
 
 def get_user_info_from_client(client, user_id) -> dict:
     user_info = client.users_info(user=str(user_id))
-    if user_info and "ok" in user_info and user_info["ok"] == True and "user" in user_info:
+    if (
+        user_info
+        and "ok" in user_info
+        and user_info["ok"] == True
+        and "user" in user_info
+    ):
         return user_info["user"]
     return {}

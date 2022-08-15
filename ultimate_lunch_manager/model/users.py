@@ -11,4 +11,6 @@ class Users(Base):
     id_user = Column(Integer, primary_key=True, index=True)
     slack_user_id = Column(String, nullable=False)
     is_participating = Column(Boolean, nullable=False)
-    creation_date_utc = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
+    creation_date_utc = Column(
+        DateTime, nullable=False, default=datetime.datetime.utcnow
+    )

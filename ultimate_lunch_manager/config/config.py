@@ -4,7 +4,11 @@ from pydantic import BaseSettings
 
 
 class Config(BaseSettings):
-    DB_CONN_STR = str(os.getenv("DB_CONN_STR", "postgresql://postgres:postgres@localhost:5432/lunch_manager"))
+    DB_CONN_STR = str(
+        os.getenv(
+            "DB_CONN_STR", "postgresql://postgres:postgres@localhost:5432/lunch_manager"
+        )
+    )
 
     SLACK_APP_TOKEN = str(os.getenv("SLACK_APP_TOKEN", "xoxb - 1234"))
 

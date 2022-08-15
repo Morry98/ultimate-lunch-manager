@@ -11,4 +11,6 @@ class Restaurants(Base):
     id_restaurant = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     priority = Column(Integer, nullable=True)
-    creation_date_utc = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
+    creation_date_utc = Column(
+        DateTime, nullable=False, default=datetime.datetime.utcnow
+    )
