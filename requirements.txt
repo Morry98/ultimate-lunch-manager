@@ -14,7 +14,7 @@ pydantic==1.9.2
     # via -r requirements.in
 pyjokes==0.6.0
     # via -r requirements.in
-pytz==2022.1
+pytz==2022.2.1
     # via -r requirements.in
 requests==2.28.1
     # via -r requirements.in

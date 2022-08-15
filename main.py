@@ -1,7 +1,7 @@
 import datetime
 import json
 import re
-from typing import Optional
+from typing import Optional, List, Any, Dict
 
 import pytz
 import requests
@@ -33,23 +33,23 @@ TIME_VALIDATION = re.compile(r"\d\d:\d\d")
 app = App(token=config.SLACK_APP_TOKEN, name="The Ultimate Lunch Manager")
 
 CLIENT: Optional[WebClient] = None
-CHANNEL_ID = None
-CHANNEL_NAME = None
-TIMES = ["", "12:00"]
-TIME_ALL_OPTIONS = [
+CHANNEL_ID: Optional[int] = None
+CHANNEL_NAME: Optional[str] = None
+TIMES: List = ["", "12:00"]
+TIME_ALL_OPTIONS: List = [
     {"text": {"type": "plain_text", "text": "12:00", "emoji": True}, "value": "12:00"},
 ]
-TIME_SELECTED_OPTIONS = []
-SELECTED_TIME_TO_ADD = {}  # {user: time}
-SELECTED_TIME_TO_DELETE = {}  # {user: time}
-RESTAURANTS = ["", "Nonna"]
-RESTAURANTS_ALL_OPTIONS = [
+TIME_SELECTED_OPTIONS: List = []
+SELECTED_TIME_TO_ADD: Dict = {}  # {user: time}
+SELECTED_TIME_TO_DELETE: Dict = {}  # {user: time}
+RESTAURANTS: List = ["", "Nonna"]
+RESTAURANTS_ALL_OPTIONS: List[Dict] = [
     {"text": {"type": "plain_text", "text": "Nonna", "emoji": True}, "value": "Nonna"},
 ]
-RESTAURANTS_SELECTED_OPTIONS = []
-SELECTED_RESTAURANT_TO_DELETE = {}  # {user: restaurant}
-NOTIFICATION_DAYS = []
-NOTIFICATION_DAYS_ALL_OPTIONS = [
+RESTAURANTS_SELECTED_OPTIONS: List = []
+SELECTED_RESTAURANT_TO_DELETE: Dict = {}  # {user: restaurant}
+NOTIFICATION_DAYS: List = []
+NOTIFICATION_DAYS_ALL_OPTIONS: List = [
     {
         "text": {"type": "plain_text", "text": "Monday", "emoji": True},
         "value": "Monday",
@@ -79,14 +79,14 @@ NOTIFICATION_DAYS_ALL_OPTIONS = [
         "value": "Sunday",
     },
 ]
-NOTIFICATION_DAYS_SELECTED_OPTIONS = []
-PARTICIPANTS_NOTIFICATION_TIME = "08:30"
-PARTICIPANTS_NOTIFICATION_TIMEZONE = "Europe/Amsterdam"
-COMPUTE_LUNCH_TIME = "11:30"
-COMPUTE_LUNCH_TIMEZONE = "Europe/Amsterdam"
+NOTIFICATION_DAYS_SELECTED_OPTIONS: List = []
+PARTICIPANTS_NOTIFICATION_TIME: str = "08:30"
+PARTICIPANTS_NOTIFICATION_TIMEZONE: str = "Europe/Amsterdam"
+COMPUTE_LUNCH_TIME: str = "11:30"
+COMPUTE_LUNCH_TIMEZONE: str = "Europe/Amsterdam"
 
 
-def create_times_config_message():
+def create_times_config_message() -> List:
     time_list = "\n- ".join(TIMES)
     return [
         {
@@ -150,7 +150,7 @@ def create_times_config_message():
     ]
 
 
-def create_restaurants_config_message():
+def create_restaurants_config_message() -> List:
     restaurant_list = "\n- ".join(RESTAURANTS)
     return [
         {
@@ -214,7 +214,7 @@ def create_restaurants_config_message():
     ]
 
 
-def create_notification_days_config_message():
+def create_notification_days_config_message() -> List:
     if len(NOTIFICATION_DAYS_SELECTED_OPTIONS) > 0:
         checkbox_elements = {
             "type": "checkboxes",
@@ -277,7 +277,7 @@ def create_notification_days_config_message():
     ]
 
 
-def create_select_times_message():
+def create_select_times_message() -> List:
     if len(TIME_SELECTED_OPTIONS) > 0:
         checkbox_elements = {
             "type": "checkboxes",
@@ -340,7 +340,7 @@ def create_select_times_message():
     ]
 
 
-def create_select_restaurant_message():
+def create_select_restaurant_message() -> List:
     if len(RESTAURANTS_SELECTED_OPTIONS) > 0:
         checkbox_elements = {
             "type": "checkboxes",
@@ -403,7 +403,7 @@ def create_select_restaurant_message():
     ]
 
 
-def create_on_board_message():
+def create_on_board_message() -> List:
     return [
         {
             "type": "header",
@@ -462,7 +462,7 @@ def create_on_board_message():
     ]
 
 
-def create_participants_notification_config_message():
+def create_participants_notification_config_message() -> List:
     return [
         {
             "type": "header",
@@ -505,7 +505,7 @@ def create_participants_notification_config_message():
     ]
 
 
-def create_compute_lunch_notification_config_message():
+def create_compute_lunch_notification_config_message() -> List:
     return [
         {
             "type": "header",
@@ -549,7 +549,7 @@ def create_compute_lunch_notification_config_message():
 
 
 @app.command("/start_lunch_manager")
-def repeat_text(ack, respond, command):
+def repeat_text(ack: Any, respond: Any, command: Any) -> None:
     global CHANNEL_ID
     global CHANNEL_NAME
     ack()
@@ -575,7 +575,7 @@ def repeat_text(ack, respond, command):
 
 
 @app.action("add_new_time")
-def handle_add_new_time(ack, body, client: WebClient):
+def handle_add_new_time(ack: Any, body: Any, client: WebClient) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -650,7 +650,7 @@ def handle_add_new_time(ack, body, client: WebClient):
 
 
 @app.action("select_time")
-def handle_select_time(ack, body, client):
+def handle_select_time(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -675,7 +675,7 @@ def handle_select_time(ack, body, client):
 
 
 @app.action("add_selected_time")
-def handle_add_selected_time(ack, body, client):
+def handle_add_selected_time(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -699,7 +699,7 @@ def handle_add_selected_time(ack, body, client):
                     "value": selected_time,
                 }
             )
-            TIME_ALL_OPTIONS.sort(key=lambda x: x["text"]["text"])
+            TIME_ALL_OPTIONS.sort(key=lambda x: x["text"]["text"])  # type: ignore
             TIMES.append(selected_time)
             TIMES.sort()
         requests.post(
@@ -715,7 +715,7 @@ def handle_add_selected_time(ack, body, client):
 
 
 @app.action("cancel_time_selection")
-def handle_cancel_time_selection(ack, body, client):
+def handle_cancel_time_selection(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -741,7 +741,7 @@ def handle_cancel_time_selection(ack, body, client):
 
 
 @app.action("delete_time")
-def handle_delete_time(ack, body, client):
+def handle_delete_time(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -828,7 +828,7 @@ def handle_delete_time(ack, body, client):
 
 
 @app.action("select_time_to_delete")
-def handle_select_time_to_delete(ack, body, client):
+def handle_select_time_to_delete(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -854,7 +854,7 @@ def handle_select_time_to_delete(ack, body, client):
 
 
 @app.action("confirm_time_deletion")
-def handle_confirm_time_deletion(ack, body, client):
+def handle_confirm_time_deletion(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -887,7 +887,7 @@ def handle_confirm_time_deletion(ack, body, client):
 
 
 @app.action("cancel_time_deletion")
-def handle_cancel_time_deletion(ack, body, client):
+def handle_cancel_time_deletion(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -913,7 +913,7 @@ def handle_cancel_time_deletion(ack, body, client):
 
 
 @app.action("confirm_times")
-def handle_confirm_times(ack, body, client):
+def handle_confirm_times(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -934,7 +934,7 @@ def handle_confirm_times(ack, body, client):
 
 
 @app.action("delete_all_times")
-def handle_delete_all_times(ack, body, client):
+def handle_delete_all_times(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -965,7 +965,7 @@ def handle_delete_all_times(ack, body, client):
 
 
 @app.action("add_new_restaurant")
-def handle_add_new_restaurant(ack, body, client):
+def handle_add_new_restaurant(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -1032,7 +1032,7 @@ def handle_add_new_restaurant(ack, body, client):
 
 
 @app.action("confirm_restaurant_insertion")
-def handle_confirm_restaurant_insertion(ack, body, client):
+def handle_confirm_restaurant_insertion(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -1062,7 +1062,7 @@ def handle_confirm_restaurant_insertion(ack, body, client):
                                 "value": selected_restaurant,
                             }
                         )
-                        RESTAURANTS_ALL_OPTIONS.sort(key=lambda x: x["text"]["text"])
+                        RESTAURANTS_ALL_OPTIONS.sort(key=lambda x: x["text"]["text"])  # type: ignore
                         RESTAURANTS.append(selected_restaurant)
                         RESTAURANTS.sort()
                     break
@@ -1080,7 +1080,7 @@ def handle_confirm_restaurant_insertion(ack, body, client):
 
 
 @app.action("cancel_restaurant_insertion")
-def handle_cancel_restaurant_insertion(ack, body, client):
+def handle_cancel_restaurant_insertion(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -1100,7 +1100,7 @@ def handle_cancel_restaurant_insertion(ack, body, client):
 
 
 @app.action("delete_restaurant")
-def handle_delete_restaurant(ack, body, client):
+def handle_delete_restaurant(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -1187,7 +1187,7 @@ def handle_delete_restaurant(ack, body, client):
 
 
 @app.action("select_restaurant_to_delete")
-def handle_select_restaurant_to_delete(ack, body, client):
+def handle_select_restaurant_to_delete(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -1213,7 +1213,7 @@ def handle_select_restaurant_to_delete(ack, body, client):
 
 
 @app.action("confirm_restaurant_deletion")
-def handle_confirm_restaurant_deletion(ack, body, client):
+def handle_confirm_restaurant_deletion(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -1246,7 +1246,7 @@ def handle_confirm_restaurant_deletion(ack, body, client):
 
 
 @app.action("cancel_restaurant_deletion")
-def handle_cancel_restaurant_deletion(ack, body, client):
+def handle_cancel_restaurant_deletion(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -1272,7 +1272,7 @@ def handle_cancel_restaurant_deletion(ack, body, client):
 
 
 @app.action("confirm_restaurants")
-def handle_confirm_restaurants(ack, body, client):
+def handle_confirm_restaurants(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -1292,7 +1292,7 @@ def handle_confirm_restaurants(ack, body, client):
 
 
 @app.action("delete_all_restaurants")
-def handle_delete_all_restaurants(ack, body, client):
+def handle_delete_all_restaurants(ack: Any, body: Any, client: Any) -> None:
     global RESTAURANTS
     global CLIENT
     if CLIENT is None:
@@ -1322,7 +1322,7 @@ def handle_delete_all_restaurants(ack, body, client):
 
 
 @app.action("notification_days_select_all")
-def handle_notification_days_select_all(ack, body, client):
+def handle_notification_days_select_all(ack: Any, body: Any, client: Any) -> None:
     global NOTIFICATION_DAYS
     global NOTIFICATION_DAYS_SELECTED_OPTIONS
     global CLIENT
@@ -1354,7 +1354,7 @@ def handle_notification_days_select_all(ack, body, client):
 
 
 @app.action("notification_days_unselect_all")
-def handle_notification_days_unselect_all(ack, body, client):
+def handle_notification_days_unselect_all(ack: Any, body: Any, client: Any) -> None:
     global NOTIFICATION_DAYS
     global NOTIFICATION_DAYS_SELECTED_OPTIONS
     global CLIENT
@@ -1378,7 +1378,7 @@ def handle_notification_days_unselect_all(ack, body, client):
 
 
 @app.action("notification_days_selection")
-def handle_notification_days_selection(ack, body, client):
+def handle_notification_days_selection(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -1399,7 +1399,7 @@ def handle_notification_days_selection(ack, body, client):
 
 
 @app.action("confirm_notification_days")
-def handle_confirm_notification_days(ack, body, client):
+def handle_confirm_notification_days(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -1418,7 +1418,9 @@ def handle_confirm_notification_days(ack, body, client):
 
 
 @app.action("select_participants_notification_time")
-def handle_select_participants_notification_time(ack, body, client):
+def handle_select_participants_notification_time(
+    ack: Any, body: Any, client: Any
+) -> None:
     global PARTICIPANTS_NOTIFICATION_TIME
     global CLIENT
     if CLIENT is None:
@@ -1444,7 +1446,9 @@ def handle_select_participants_notification_time(ack, body, client):
 
 
 @app.action("confirm_participants_notification_time")
-def handle_confirm_participants_notification_time(ack, body, client):
+def handle_confirm_participants_notification_time(
+    ack: Any, body: Any, client: Any
+) -> None:
     global PARTICIPANTS_NOTIFICATION_TIMEZONE
     global CLIENT
     if CLIENT is None:
@@ -1467,7 +1471,9 @@ def handle_confirm_participants_notification_time(ack, body, client):
 
 
 @app.action("select_compute_notification_notification_time")
-def handle_select_compute_notification_notification_time(ack, body, client):
+def handle_select_compute_notification_notification_time(
+    ack: Any, body: Any, client: Any
+) -> None:
     global COMPUTE_LUNCH_TIME
     global CLIENT
     if CLIENT is None:
@@ -1491,7 +1497,9 @@ def handle_select_compute_notification_notification_time(ack, body, client):
 
 
 @app.action("confirm_compute_notification_notification_time")
-def handle_confirm_compute_notification_notification_time(ack, body, client):
+def handle_confirm_compute_notification_notification_time(
+    ack: Any, body: Any, client: Any
+) -> None:
     global COMPUTE_LUNCH_TIMEZONE
     global CLIENT
     if CLIENT is None:
@@ -1544,7 +1552,7 @@ def get_timezone_from_user(user: dict) -> str:
     )
 
 
-def convert_time_string_to_utc_datetime(time: str, timezone: str):
+def convert_time_string_to_utc_datetime(time: str, timezone: str) -> datetime.datetime:
     if not TIME_VALIDATION.match(time):
         raise ValueError("Invalid time string")
     utc_now = datetime.datetime.utcnow()
@@ -1561,17 +1569,19 @@ def convert_time_string_to_utc_datetime(time: str, timezone: str):
 
 
 def get_seconds_difference_from_timezone_name(timezone: str) -> float:
-    nowtz = datetime.datetime.now(pytz.timezone(timezone))
-    return nowtz.utcoffset().total_seconds()
+    timezone_offset = datetime.datetime.now(pytz.timezone(timezone)).utcoffset()
+    if timezone_offset is None:
+        return 0
+    return timezone_offset.total_seconds()
 
 
 @app.action("confirm_train_participation")
-def handle_confirm_train_participation(ack, body, client):
+def handle_confirm_train_participation(ack: Any, body: Any, client: Any) -> None:
     ack()
     if body is not None and "user" in body and "id" in body["user"]:
         user_info = get_user_info_from_client(client=client, user_id=body["user"]["id"])
         add_participating_user(user_id=user_info["id"])
-    response = client.chat_postEphemeral(
+    client.chat_postEphemeral(
         channel=CHANNEL_NAME,
         user=body["user"]["id"],
         text="You are participating!",
@@ -1580,7 +1590,7 @@ def handle_confirm_train_participation(ack, body, client):
 
 
 @app.action("confirm_restaurants_preference")
-def handle_confirm_train_participation(ack, body, client):
+def handle_confirm_restaurants_preference(ack: Any, body: Any, client: Any) -> None:
     ack()
     if body is not None and "user" in body and "id" in body["user"]:
         user_info = get_user_info_from_client(client=client, user_id=body["user"]["id"])
@@ -1625,7 +1635,7 @@ def handle_confirm_train_participation(ack, body, client):
 
 
 @app.action("reject_train_participation")
-def handle_reject_train_participation(ack, body, client):
+def handle_reject_train_participation(ack: Any, body: Any, client: Any) -> None:
     ack()
     if body is not None and "user" in body and "id" in body["user"]:
         user_info = get_user_info_from_client(client=client, user_id=body["user"]["id"])
@@ -1670,7 +1680,7 @@ def handle_reject_train_participation(ack, body, client):
 
 
 @app.action("board_train")
-def handle_board_train(ack, body, client):
+def handle_board_train(ack: Any, body: Any, client: Any) -> None:
     ack()
     if body is not None and "user" in body and "id" in body["user"]:
         user_info = get_user_info_from_client(client=client, user_id=body["user"]["id"])
@@ -1687,7 +1697,7 @@ def handle_board_train(ack, body, client):
 
 
 @app.action("leave_train")
-def handle_leave_train(ack, body, client):
+def handle_leave_train(ack: Any, body: Any, client: Any) -> None:
     ack()
     if body is not None and "user" in body and "id" in body["user"]:
         user_info = get_user_info_from_client(client=client, user_id=body["user"]["id"])
@@ -1729,7 +1739,7 @@ def handle_leave_train(ack, body, client):
 
 
 @app.action("time_select_all")
-def handle_time_select_all(ack, body, client):
+def handle_time_select_all(ack: Any, body: Any, client: Any) -> None:
     global TIME_SELECTED_OPTIONS
     global CLIENT
     if CLIENT is None:
@@ -1752,7 +1762,7 @@ def handle_time_select_all(ack, body, client):
 
 
 @app.action("time_unselect_all")
-def handle_time_unselect_all(ack, body, client):
+def handle_time_unselect_all(ack: Any, body: Any, client: Any) -> None:
     global TIME_SELECTED_OPTIONS
     global CLIENT
     if CLIENT is None:
@@ -1775,7 +1785,7 @@ def handle_time_unselect_all(ack, body, client):
 
 
 @app.action("time_selection")
-def handle_time_selection(ack, body, client):
+def handle_time_selection(ack: Any, body: Any, client: Any) -> None:
     global TIME_SELECTED_OPTIONS
     global CLIENT
     if CLIENT is None:
@@ -1797,7 +1807,7 @@ def handle_time_selection(ack, body, client):
 
 
 @app.action("confirm_time_selection")
-def handle_confirm_time(ack, body, client):
+def handle_confirm_time(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -1816,7 +1826,7 @@ def handle_confirm_time(ack, body, client):
 
 
 @app.action("restaurants_select_all")
-def handle_restaurant_select_all(ack, body, client):
+def handle_restaurant_select_all(ack: Any, body: Any, client: Any) -> None:
     global RESTAURANTS_SELECTED_OPTIONS
     global CLIENT
     if CLIENT is None:
@@ -1839,7 +1849,7 @@ def handle_restaurant_select_all(ack, body, client):
 
 
 @app.action("restaurants_unselect_all")
-def handle_restaurant_unselect_all(ack, body, client):
+def handle_restaurant_unselect_all(ack: Any, body: Any, client: Any) -> None:
     global RESTAURANTS_SELECTED_OPTIONS
     global CLIENT
     if CLIENT is None:
@@ -1862,7 +1872,7 @@ def handle_restaurant_unselect_all(ack, body, client):
 
 
 @app.action("restaurants_selection")
-def handle_restaurant_selection(ack, body, client):
+def handle_restaurant_selection(ack: Any, body: Any, client: Any) -> None:
     global RESTAURANTS_SELECTED_OPTIONS
     global CLIENT
     if CLIENT is None:
@@ -1886,7 +1896,7 @@ def handle_restaurant_selection(ack, body, client):
 
 
 @app.action("confirm_restaurants_selection")
-def handle_confirm_restaurant(ack, body, client):
+def handle_confirm_restaurant(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -1917,13 +1927,13 @@ def handle_confirm_restaurant(ack, body, client):
 
 
 @app.event("message")
-def handle_message_events(body, logger):
+def handle_message_events(body: Any, logger: Any) -> None:
     pass
 
 
-def main():
+def main() -> None:
     handler = SocketModeHandler(app, config.SLACK_TOKEN_SOCKET)
-    handler.start()
+    handler.start()  # type: ignore
 
 
 if __name__ == "__main__":
