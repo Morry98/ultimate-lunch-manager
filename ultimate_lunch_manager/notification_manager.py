@@ -8,6 +8,7 @@ import loguru
 import pyjokes
 
 from ultimate_lunch_manager.config.config import Config
+from ultimate_lunch_manager.user import users_service
 
 config = Config()
 
@@ -54,8 +55,6 @@ WEEKDAY_NUMBER_TO_STRING: Dict[int, str] = {
     6: "sunday",
 }
 
-USERS_PARTICIPATING: Any = []
-USERS_NOT_PARTICIPATING: Any = []
 USER_TIME_PREFERENCES: Any = {}
 USER_RESTAURANT_PREFERENCES: Any = {}
 PARTICIPANTS_PRIVATE_MESSAGES: Any = {}
@@ -128,8 +127,10 @@ def close_train_message(client: Any) -> List:
         debug_participating_message = "user participating:\n"
         debug_time_pref_message = "\nuser time preferences:\n"
         debug_rest_pref_message = "\nuser restaurant preferences:\n"
-        for u in USERS_PARTICIPATING:
-            user_name = get_user_info_from_client(client, u)["name"]
+        for u in users_service.get_users(is_participating=True):
+            user_name = get_user_info_from_client(
+                client=client, user_id=u.slack_user_id
+            )["name"]
             debug_participating_message += f"- {user_name}\n"
             debug_time_pref_message += (
                 f"- {user_name}: "
@@ -271,8 +272,6 @@ class NotificationManager(Thread):
 
     # TODO Reduce complexity 19
     def task(self) -> None:  # NOQA: C901
-        global USERS_PARTICIPATING
-        global USERS_NOT_PARTICIPATING
         global USER_TIME_PREFERENCES
         global USER_RESTAURANT_PREFERENCES
         global PARTICIPANTS_PRIVATE_MESSAGES
@@ -382,8 +381,7 @@ class NotificationManager(Thread):
             ):
                 self.__compute_lunch_datetime += datetime.timedelta(days=1)
 
-            USERS_PARTICIPATING = []
-            USERS_NOT_PARTICIPATING = []
+            users_service.clear_all_participants()
             USER_TIME_PREFERENCES = {}
             USER_RESTAURANT_PREFERENCES = {}
             PARTICIPANTS_PRIVATE_MESSAGES = {}
@@ -391,24 +389,6 @@ class NotificationManager(Thread):
             SELECTED_RESTAURANT = None
             TIME_DISSATISFIED_USERS = []
             RESTAURANT_DISSATISFIED_USERS = []
-
-
-def add_participating_user(user_id: Any) -> None:
-    if user_id not in USERS_PARTICIPATING:
-        USERS_PARTICIPATING.append(user_id)
-    if user_id in USERS_NOT_PARTICIPATING:
-        USERS_NOT_PARTICIPATING.remove(user_id)
-    if user_id not in USER_RESTAURANT_PREFERENCES:
-        USER_RESTAURANT_PREFERENCES[user_id] = []
-    if user_id not in USER_TIME_PREFERENCES:
-        USER_TIME_PREFERENCES[user_id] = []
-
-
-def remove_participating_user(user_id: Any) -> None:
-    if user_id in USERS_PARTICIPATING:
-        USERS_PARTICIPATING.remove(user_id)
-    if user_id not in USERS_NOT_PARTICIPATING:
-        USERS_NOT_PARTICIPATING.append(user_id)
 
 
 def add_message_to_participants(message_ts: Any, user_id: Any, channel: Any) -> None:
@@ -458,11 +438,11 @@ def _compute_selected_parameters(client: Any) -> None:  # noqa: C901
     global TIME_DISSATISFIED_USERS
     global RESTAURANT_DISSATISFIED_USERS
 
-    user_count: int = len(USERS_PARTICIPATING)
+    user_count: int = len(users_service.get_users(is_participating=True))
     time_preferences_score: Dict[str, int] = {}
     restaurant_preferences_score: Dict[str, int] = {}
     for user, time_preferences in USER_TIME_PREFERENCES.items():
-        if user in USERS_NOT_PARTICIPATING:
+        if user in users_service.get_users(is_participating=False):
             continue
         for time in time_preferences:
             if time == "" or time is None:
@@ -472,7 +452,7 @@ def _compute_selected_parameters(client: Any) -> None:  # noqa: C901
             time_preferences_score[time] += 1
 
     for user, restaurant_preferences in USER_RESTAURANT_PREFERENCES.items():
-        if user in USERS_NOT_PARTICIPATING:
+        if user in users_service.get_users(is_participating=False):
             continue
         for restaurant in restaurant_preferences:
             if restaurant == "" or restaurant is None:

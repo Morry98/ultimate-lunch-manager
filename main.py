@@ -13,8 +13,6 @@ from slack_sdk.web.client import WebClient
 from ultimate_lunch_manager.config.config import Config
 from ultimate_lunch_manager.notification_manager import (
     NotificationManager,
-    add_participating_user,
-    remove_participating_user,
     add_message_to_participants,
     get_participants_message,
     add_user_time_preferences,
@@ -23,6 +21,7 @@ from ultimate_lunch_manager.notification_manager import (
     remove_user_restaurant_preferences,
     get_user_info_from_client,
 )
+from ultimate_lunch_manager.user import users_service
 
 config = Config()
 
@@ -1580,7 +1579,9 @@ def handle_confirm_train_participation(ack: Any, body: Any, client: Any) -> None
     ack()
     if body is not None and "user" in body and "id" in body["user"]:
         user_info = get_user_info_from_client(client=client, user_id=body["user"]["id"])
-        add_participating_user(user_id=user_info["id"])
+        users_service.set_user_participating(
+            slack_user_id=user_info["id"], is_participating=True
+        )
     client.chat_postEphemeral(
         channel=CHANNEL_NAME,
         user=body["user"]["id"],
@@ -1594,7 +1595,9 @@ def handle_confirm_restaurants_preference(ack: Any, body: Any, client: Any) -> N
     ack()
     if body is not None and "user" in body and "id" in body["user"]:
         user_info = get_user_info_from_client(client=client, user_id=body["user"]["id"])
-        add_participating_user(user_id=user_info["id"])
+        users_service.set_user_participating(
+            slack_user_id=user_info["id"], is_participating=True
+        )
     response = client.chat_postMessage(
         channel=body["user"]["id"],
         user=body["user"]["id"],
@@ -1639,7 +1642,9 @@ def handle_reject_train_participation(ack: Any, body: Any, client: Any) -> None:
     ack()
     if body is not None and "user" in body and "id" in body["user"]:
         user_info = get_user_info_from_client(client=client, user_id=body["user"]["id"])
-        remove_participating_user(user_id=user_info["id"])
+        users_service.set_user_participating(
+            slack_user_id=user_info["id"], is_participating=False
+        )
     response = client.chat_postMessage(
         channel=body["user"]["id"],
         user=body["user"]["id"],
@@ -1684,7 +1689,9 @@ def handle_board_train(ack: Any, body: Any, client: Any) -> None:
     ack()
     if body is not None and "user" in body and "id" in body["user"]:
         user_info = get_user_info_from_client(client=client, user_id=body["user"]["id"])
-        add_participating_user(user_id=user_info["id"])
+        users_service.set_user_participating(
+            slack_user_id=user_info["id"], is_participating=True
+        )
     participants_message = get_participants_message(user_id=body["user"]["id"])
     if participants_message is not None:
         client.chat_update(
@@ -1701,7 +1708,9 @@ def handle_leave_train(ack: Any, body: Any, client: Any) -> None:
     ack()
     if body is not None and "user" in body and "id" in body["user"]:
         user_info = get_user_info_from_client(client=client, user_id=body["user"]["id"])
-        remove_participating_user(user_id=user_info["id"])
+        users_service.set_user_participating(
+            slack_user_id=user_info["id"], is_participating=False
+        )
     participants_message = get_participants_message(user_id=body["user"]["id"])
     if participants_message is not None:
         client.chat_update(
