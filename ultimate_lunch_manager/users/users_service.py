@@ -3,7 +3,7 @@ from typing import Optional, List
 
 from cachetools.func import ttl_cache
 
-from ultimate_lunch_manager.user import users_schema, users_crud
+from ultimate_lunch_manager.users import users_schema, users_crud
 
 
 @ttl_cache(maxsize=128, ttl=60)

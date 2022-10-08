@@ -4,7 +4,7 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 
 from ultimate_lunch_manager.database import get_db
-from ultimate_lunch_manager.user import users_model
+from ultimate_lunch_manager.users import users_model
 
 
 def get_users(

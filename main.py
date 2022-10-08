@@ -21,7 +21,7 @@ from ultimate_lunch_manager.notification_manager import (
     remove_user_restaurant_preferences,
     get_user_info_from_client,
 )
-from ultimate_lunch_manager.user import users_service
+from ultimate_lunch_manager.users import users_service
 
 config = Config()
 

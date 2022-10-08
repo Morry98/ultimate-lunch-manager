@@ -8,7 +8,7 @@ import loguru
 import pyjokes
 
 from ultimate_lunch_manager.config.config import Config
-from ultimate_lunch_manager.user import users_service
+from ultimate_lunch_manager.users import users_service
 
 config = Config()
 
