@@ -8,8 +8,15 @@ from ultimate_lunch_manager.config.config import Config
 
 config = Config()
 
-engine = create_engine(config.DB_CONN_STR)
-SessionLocal = sessionmaker(autocommit=False, autoflush=True, bind=engine)
+engine = create_engine(
+    config.DB_CONN_STR,
+    execution_options={"isolation_level": "AUTOCOMMIT"},
+)
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=True,
+    bind=engine,
+)
 
 Base = declarative_base()
 
