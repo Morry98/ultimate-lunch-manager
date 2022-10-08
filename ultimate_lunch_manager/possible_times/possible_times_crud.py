@@ -56,6 +56,10 @@ def get_possible_times(
         )
     if limit is not None:
         query = query.offset(skip).limit(limit)
+    # sort query by priority null last
+    query = query.order_by(
+        possible_times_model.PossibleTimes.priority.desc(nullslast=True)
+    )
     result: List[possible_times_model.PossibleTimes] = query.all()
     return result
 
