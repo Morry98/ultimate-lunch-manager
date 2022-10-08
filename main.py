@@ -21,6 +21,10 @@ from ultimate_lunch_manager.notification_manager import (
     remove_user_restaurant_preferences,
     get_user_info_from_client,
 )
+from ultimate_lunch_manager.possible_times import (
+    possible_times_service,
+    possible_times_schema,
+)
 from ultimate_lunch_manager.users import users_service
 
 config = Config()
@@ -34,10 +38,6 @@ app = App(token=config.SLACK_APP_TOKEN, name="The Ultimate Lunch Manager")
 CLIENT: Optional[WebClient] = None
 CHANNEL_ID: Optional[int] = None
 CHANNEL_NAME: Optional[str] = None
-TIMES: List = ["", "12:00"]
-TIME_ALL_OPTIONS: List = [
-    {"text": {"type": "plain_text", "text": "12:00", "emoji": True}, "value": "12:00"},
-]
 TIME_SELECTED_OPTIONS: List = []
 SELECTED_TIME_TO_ADD: Dict = {}  # {user: time}
 SELECTED_TIME_TO_DELETE: Dict = {}  # {user: time}
@@ -86,7 +86,9 @@ COMPUTE_LUNCH_TIMEZONE: str = "Europe/Amsterdam"
 
 
 def create_times_config_message() -> List:
-    time_list = "\n- ".join(TIMES)
+    time_list = "\n- ".join(
+        [x.time for x in possible_times_service.get_possible_times()]
+    )
     return [
         {
             "type": "header",
@@ -280,14 +282,14 @@ def create_select_times_message() -> List:
     if len(TIME_SELECTED_OPTIONS) > 0:
         checkbox_elements = {
             "type": "checkboxes",
-            "options": TIME_ALL_OPTIONS,
+            "options": possible_times_service.get_time_all_options(),
             "initial_options": TIME_SELECTED_OPTIONS,
             "action_id": "time_selection",
         }
     else:
         checkbox_elements = {
             "type": "checkboxes",
-            "options": TIME_ALL_OPTIONS,
+            "options": possible_times_service.get_time_all_options(),
             "action_id": "time_selection",
         }
     return [
@@ -687,20 +689,14 @@ def handle_add_selected_time(ack: Any, body: Any, client: Any) -> None:
         and body["user"]["id"] in SELECTED_TIME_TO_ADD
     ):
         selected_time = SELECTED_TIME_TO_ADD.pop(body["user"]["id"])
-        if selected_time not in TIMES:
-            TIME_ALL_OPTIONS.append(
-                {
-                    "text": {
-                        "type": "plain_text",
-                        "text": selected_time,
-                        "emoji": True,
-                    },
-                    "value": selected_time,
-                }
+        if selected_time not in [
+            x.time for x in possible_times_service.get_possible_times()
+        ]:
+            possible_times_service.create_possible_time(
+                possible_time=possible_times_schema.PossibleTimesBase(
+                    time=selected_time,
+                )
             )
-            TIME_ALL_OPTIONS.sort(key=lambda x: x["text"]["text"])  # type: ignore
-            TIMES.append(selected_time)
-            TIMES.sort()
         requests.post(
             url=body["response_url"],
             headers={"Content-Type": "application/json"},
@@ -747,7 +743,7 @@ def handle_delete_time(ack: Any, body: Any, client: Any) -> None:
     ack()
     if body is not None and "response_url" in body:
         options = []
-        for time in TIMES:
+        for time in possible_times_service.get_possible_times():
             if time == "":
                 continue
             options.append(
@@ -866,13 +862,8 @@ def handle_confirm_time_deletion(ack: Any, body: Any, client: Any) -> None:
         and body["user"]["id"] in SELECTED_TIME_TO_DELETE
     ):
         selected_time = SELECTED_TIME_TO_DELETE.pop(body["user"]["id"])
-        if selected_time in TIMES:
-            TIMES.remove(selected_time)
-            # remove selected_time from TIME_ALL_OPTIONS where text: text = selected_time
-            for i in range(len(TIME_ALL_OPTIONS)):
-                if TIME_ALL_OPTIONS[i]["text"]["text"] == selected_time:
-                    TIME_ALL_OPTIONS.pop(i)
-                    break
+        if selected_time in possible_times_service.get_possible_times():
+            possible_times_service.delete_possible_time(time=selected_time)
         requests.post(
             url=body["response_url"],
             headers={"Content-Type": "application/json"},
@@ -937,7 +928,6 @@ def handle_delete_all_times(ack: Any, body: Any, client: Any) -> None:
     global CLIENT
     if CLIENT is None:
         CLIENT = client
-    global TIMES
     ack()
     if body is not None and "response_url" in body:
 
@@ -947,8 +937,7 @@ def handle_delete_all_times(ack: Any, body: Any, client: Any) -> None:
             and body["user"]["id"] in SELECTED_TIME_TO_DELETE
         ):
             _ = SELECTED_TIME_TO_DELETE.pop(body["user"]["id"])
-        TIMES.clear()
-        TIMES = [""]
+        possible_times_service.delete_possible_time()
         SELECTED_TIME_TO_DELETE.clear()
         SELECTED_TIME_TO_ADD.clear()
         requests.post(
@@ -1754,9 +1743,9 @@ def handle_time_select_all(ack: Any, body: Any, client: Any) -> None:
     if CLIENT is None:
         CLIENT = client
     ack()
-    for t in TIMES:
+    for t in possible_times_service.get_possible_times():
         add_user_time_preferences(user_id=body["user"]["id"], time=t)
-    TIME_SELECTED_OPTIONS = TIME_ALL_OPTIONS.copy()
+    TIME_SELECTED_OPTIONS = possible_times_service.get_time_all_options().copy()
     if body is not None and "response_url" in body:
         requests.post(
             url=body["response_url"],
@@ -1778,8 +1767,8 @@ def handle_time_unselect_all(ack: Any, body: Any, client: Any) -> None:
         CLIENT = client
     ack()
     TIME_SELECTED_OPTIONS = []
-    for t in TIMES:
-        remove_user_time_preferences(user_id=body["user"]["id"], time=t)
+    for t in possible_times_service.get_possible_times():
+        remove_user_time_preferences(user_id=body["user"]["id"], time=t.time)
     if body is not None and "response_url" in body:
         requests.post(
             url=body["response_url"],
