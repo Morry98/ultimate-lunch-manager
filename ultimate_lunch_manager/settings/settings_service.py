@@ -1,4 +1,8 @@
+import pickle
+from typing import Optional
+
 from cachetools.func import ttl_cache
+from slack_sdk.web.client import WebClient
 
 from ultimate_lunch_manager.settings import settings_schema, settings_crud
 
@@ -20,6 +24,34 @@ def get_settings() -> settings_schema.SettingsBase:
         participants_notification_timezone=settings_db.participants_notification_timezone,
         compute_lunch_timezone=settings_db.compute_lunch_timezone,
     )
+
+
+@ttl_cache(maxsize=1, ttl=60)
+def get_client() -> Optional[WebClient]:
+    """Get all settings from the database.
+
+    Returns:
+        settings_schema.SettingsBase: Settings
+    """
+    client = get_settings().client
+    if client is None:
+        return None
+    return_value: WebClient = pickle.loads(client)
+    return return_value
+
+
+def update_client(client: WebClient) -> bytes:
+    """Update client in the database.
+
+    Args:
+        client (bytes): client
+
+    Returns:
+        bytes: client
+    """
+    settings_db = get_settings()
+    settings_db.client = pickle.dumps(client)
+    return settings_db.client
 
 
 def update_settings(
