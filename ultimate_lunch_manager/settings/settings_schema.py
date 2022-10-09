@@ -14,7 +14,7 @@ class SettingsBase(BaseModel):
     compute_lunch_timezone: Optional[str] = None
 
 
-class PossibleTimes(SettingsBase):
+class Settings(SettingsBase):
     id_settings: int
 
     class Config:
