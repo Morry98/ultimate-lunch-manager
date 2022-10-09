@@ -24,4 +24,16 @@
             columnName="lunch_notification_time"
             tableName="settings"/>
     </changeSet>
+
+    <changeSet author="Matteo Morando" id="3">
+        <modifyDataType columnName="client"
+            newDataType="blob"
+            tableName="settings"/>
+    </changeSet>
+
+    <changeSet author="Matteo Morando" id="4">
+        <modifyDataType columnName="channel_id"
+            newDataType="int"
+            tableName="settings"/>
+    </changeSet>
 </databaseChangeLog>
