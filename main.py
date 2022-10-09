@@ -36,9 +36,6 @@ TIME_VALIDATION = re.compile(r"\d\d:\d\d")
 
 app = App(token=config.SLACK_APP_TOKEN, name="The Ultimate Lunch Manager")
 
-CLIENT: Optional[WebClient] = None
-CHANNEL_ID: Optional[int] = None
-CHANNEL_NAME: Optional[str] = None
 TIME_SELECTED_OPTIONS: List = []
 SELECTED_TIME_TO_ADD: Dict = {}  # {user: time}
 SELECTED_TIME_TO_DELETE: Dict = {}  # {user: time}
@@ -80,8 +77,6 @@ NOTIFICATION_DAYS_ALL_OPTIONS: List = [
     },
 ]
 NOTIFICATION_DAYS_SELECTED_OPTIONS: List = []
-PARTICIPANTS_NOTIFICATION_TIME: str = "08:30"
-PARTICIPANTS_NOTIFICATION_TIMEZONE: str = "Europe/Amsterdam"
 
 
 def create_times_config_message() -> List:
@@ -476,7 +471,7 @@ def create_participants_notification_config_message() -> List:
             "type": "input",
             "element": {
                 "type": "timepicker",
-                "initial_time": PARTICIPANTS_NOTIFICATION_TIME,
+                "initial_time": settings_service.get_settings().participants_notification_time,
                 "placeholder": {
                     "type": "plain_text",
                     "text": "Select participants notification time",
@@ -556,35 +551,35 @@ def create_compute_lunch_notification_config_message() -> List:
 
 @app.command("/start_lunch_manager")
 def repeat_text(ack: Any, respond: Any, command: Any) -> None:
-    global CHANNEL_ID
-    global CHANNEL_NAME
+    settings = settings_service.get_settings()
     ack()
-    if CHANNEL_ID is None:
-        CHANNEL_ID = command["channel_id"]
-        CHANNEL_NAME = command["channel_name"]
+    if settings.channel_id is None:
+        settings.channel_id = command["channel_id"]
+        settings.channel_name = command["channel_name"]
+        settings_service.update_settings(settings=settings)
         user_name = command["user_name"]
         respond(
             text=f"Bot is started in this channel by {user_name}",
             response_type="in_channel",
         )
         respond(blocks=create_times_config_message(), response_type="ephemeral")
-    elif CHANNEL_ID == command["channel_id"]:
+    elif settings.channel_id == command["channel_id"]:
         respond(
             text="Already running in this channel!\nIf you want to stop use /stop",
             response_type="ephemeral",
         )
     else:
         respond(
-            text=f"Already running in another channel: {CHANNEL_NAME}\nIf you want to move it use /move",
+            text=f"Already running in another channel: {settings.channel_name}\nIf you want to move it use /stop",
             response_type="ephemeral",
         )
 
 
 @app.action("add_new_time")
 def handle_add_new_time(ack: Any, body: Any, client: WebClient) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if body is not None and "response_url" in body:
         default_selected_time = "13:00"
@@ -657,9 +652,9 @@ def handle_add_new_time(ack: Any, body: Any, client: WebClient) -> None:
 
 @app.action("select_time")
 def handle_select_time(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     selected_time = None
     if (
@@ -682,9 +677,9 @@ def handle_select_time(ack: Any, body: Any, client: Any) -> None:
 
 @app.action("add_selected_time")
 def handle_add_selected_time(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if (
         body is not None
@@ -716,9 +711,9 @@ def handle_add_selected_time(ack: Any, body: Any, client: Any) -> None:
 
 @app.action("cancel_time_selection")
 def handle_cancel_time_selection(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if body is not None and "response_url" in body:
 
@@ -742,9 +737,9 @@ def handle_cancel_time_selection(ack: Any, body: Any, client: Any) -> None:
 
 @app.action("delete_time")
 def handle_delete_time(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if body is not None and "response_url" in body:
         options = []
@@ -829,9 +824,9 @@ def handle_delete_time(ack: Any, body: Any, client: Any) -> None:
 
 @app.action("select_time_to_delete")
 def handle_select_time_to_delete(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     selected_time = None
     if (
@@ -855,9 +850,9 @@ def handle_select_time_to_delete(ack: Any, body: Any, client: Any) -> None:
 
 @app.action("confirm_time_deletion")
 def handle_confirm_time_deletion(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if (
         body is not None
@@ -883,9 +878,9 @@ def handle_confirm_time_deletion(ack: Any, body: Any, client: Any) -> None:
 
 @app.action("cancel_time_deletion")
 def handle_cancel_time_deletion(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if body is not None and "response_url" in body:
 
@@ -909,9 +904,9 @@ def handle_cancel_time_deletion(ack: Any, body: Any, client: Any) -> None:
 
 @app.action("confirm_times")
 def handle_confirm_times(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if body is not None and "response_url" in body:
         SELECTED_TIME_TO_DELETE.clear()
@@ -930,9 +925,9 @@ def handle_confirm_times(ack: Any, body: Any, client: Any) -> None:
 
 @app.action("delete_all_times")
 def handle_delete_all_times(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if body is not None and "response_url" in body:
 
@@ -959,9 +954,9 @@ def handle_delete_all_times(ack: Any, body: Any, client: Any) -> None:
 
 @app.action("add_new_restaurant")
 def handle_add_new_restaurant(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if body is not None and "response_url" in body:
         requests.post(
@@ -1026,9 +1021,9 @@ def handle_add_new_restaurant(ack: Any, body: Any, client: Any) -> None:
 
 @app.action("confirm_restaurant_insertion")
 def handle_confirm_restaurant_insertion(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if (
         body is not None
@@ -1074,9 +1069,9 @@ def handle_confirm_restaurant_insertion(ack: Any, body: Any, client: Any) -> Non
 
 @app.action("cancel_restaurant_insertion")
 def handle_cancel_restaurant_insertion(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if body is not None and "response_url" in body:
         SELECTED_RESTAURANT_TO_DELETE.clear()
@@ -1094,9 +1089,9 @@ def handle_cancel_restaurant_insertion(ack: Any, body: Any, client: Any) -> None
 
 @app.action("delete_restaurant")
 def handle_delete_restaurant(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if body is not None and "response_url" in body:
         options = []
@@ -1181,9 +1176,9 @@ def handle_delete_restaurant(ack: Any, body: Any, client: Any) -> None:
 
 @app.action("select_restaurant_to_delete")
 def handle_select_restaurant_to_delete(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     selected_restaurant = None
     if (
@@ -1207,9 +1202,9 @@ def handle_select_restaurant_to_delete(ack: Any, body: Any, client: Any) -> None
 
 @app.action("confirm_restaurant_deletion")
 def handle_confirm_restaurant_deletion(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if (
         body is not None
@@ -1240,9 +1235,9 @@ def handle_confirm_restaurant_deletion(ack: Any, body: Any, client: Any) -> None
 
 @app.action("cancel_restaurant_deletion")
 def handle_cancel_restaurant_deletion(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if body is not None and "response_url" in body:
 
@@ -1266,9 +1261,9 @@ def handle_cancel_restaurant_deletion(ack: Any, body: Any, client: Any) -> None:
 
 @app.action("confirm_restaurants")
 def handle_confirm_restaurants(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if body is not None and "response_url" in body:
         SELECTED_RESTAURANT_TO_DELETE.clear()
@@ -1287,9 +1282,9 @@ def handle_confirm_restaurants(ack: Any, body: Any, client: Any) -> None:
 @app.action("delete_all_restaurants")
 def handle_delete_all_restaurants(ack: Any, body: Any, client: Any) -> None:
     global RESTAURANTS
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if body is not None and "response_url" in body:
 
@@ -1318,9 +1313,9 @@ def handle_delete_all_restaurants(ack: Any, body: Any, client: Any) -> None:
 def handle_notification_days_select_all(ack: Any, body: Any, client: Any) -> None:
     global NOTIFICATION_DAYS
     global NOTIFICATION_DAYS_SELECTED_OPTIONS
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     NOTIFICATION_DAYS = [
         "Monday",
@@ -1350,9 +1345,9 @@ def handle_notification_days_select_all(ack: Any, body: Any, client: Any) -> Non
 def handle_notification_days_unselect_all(ack: Any, body: Any, client: Any) -> None:
     global NOTIFICATION_DAYS
     global NOTIFICATION_DAYS_SELECTED_OPTIONS
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     NOTIFICATION_DAYS = []
     NOTIFICATION_DAYS_SELECTED_OPTIONS = []
@@ -1372,9 +1367,9 @@ def handle_notification_days_unselect_all(ack: Any, body: Any, client: Any) -> N
 
 @app.action("notification_days_selection")
 def handle_notification_days_selection(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if body is not None and "actions" in body:
         for action in body["actions"]:
@@ -1393,9 +1388,9 @@ def handle_notification_days_selection(ack: Any, body: Any, client: Any) -> None
 
 @app.action("confirm_notification_days")
 def handle_confirm_notification_days(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if body is not None and "response_url" in body:
         requests.post(
@@ -1414,10 +1409,9 @@ def handle_confirm_notification_days(ack: Any, body: Any, client: Any) -> None:
 def handle_select_participants_notification_time(
     ack: Any, body: Any, client: Any
 ) -> None:
-    global PARTICIPANTS_NOTIFICATION_TIME
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if (
         body is not None
@@ -1432,9 +1426,11 @@ def handle_select_participants_notification_time(
                     continue
                 temp_inner_value_dict = body["state"]["values"][value][inner_value]
                 if "selected_time" in temp_inner_value_dict:
-                    PARTICIPANTS_NOTIFICATION_TIME = temp_inner_value_dict[
+                    settings = settings_service.get_settings()
+                    settings.participants_notification_time = temp_inner_value_dict[
                         "selected_time"
                     ]
+                    settings_service.update_settings(settings=settings)
                     break
 
 
@@ -1442,10 +1438,10 @@ def handle_select_participants_notification_time(
 def handle_confirm_participants_notification_time(
     ack: Any, body: Any, client: Any
 ) -> None:
-    global PARTICIPANTS_NOTIFICATION_TIMEZONE
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    settings = settings_service.get_settings()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     requests.post(
         url=body["response_url"],
@@ -1458,7 +1454,7 @@ def handle_confirm_participants_notification_time(
         ),
     )
     if body is not None and "user" in body and "id" in body["user"]:
-        PARTICIPANTS_NOTIFICATION_TIMEZONE = get_timezone_from_user(
+        settings.participants_notification_timezone = get_timezone_from_user(
             get_user_info_from_client(client=client, user_id=body["user"]["id"])
         )
 
@@ -1467,9 +1463,9 @@ def handle_confirm_participants_notification_time(
 def handle_select_compute_notification_notification_time(
     ack: Any, body: Any, client: Any
 ) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if (
         body is not None
@@ -1496,9 +1492,10 @@ def handle_select_compute_notification_notification_time(
 def handle_confirm_compute_notification_notification_time(
     ack: Any, body: Any, client: Any
 ) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    settings = settings_service.get_settings()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     requests.post(
         url=body["response_url"],
@@ -1520,18 +1517,17 @@ def handle_confirm_compute_notification_notification_time(
             channel=body["channel"]["id"],
             text=f"Bot has been configured in this channel by {user_name}",
         )
-        settings = settings_service.get_settings()
         settings.compute_lunch_timezone = get_timezone_from_user(
             get_user_info_from_client(client=client, user_id=body["user"]["id"])
         )
         settings_service.update_settings(settings=settings)
 
     notification_manager = NotificationManager(
-        client=CLIENT,
-        channel_name=CHANNEL_NAME,
+        client=settings_service.get_client(),
+        channel_name=settings.channel_name,
         participants_notification_datetime=convert_time_string_to_utc_datetime(
-            time=PARTICIPANTS_NOTIFICATION_TIME,
-            timezone=PARTICIPANTS_NOTIFICATION_TIMEZONE,
+            time=settings.participants_notification_time,
+            timezone=settings.participants_notification_timezone,
         ),
         compute_lunch_datetime=convert_time_string_to_utc_datetime(
             time=settings_service.get_settings().lunch_notification_time,
@@ -1543,11 +1539,15 @@ def handle_confirm_compute_notification_notification_time(
 
 
 def get_timezone_from_user(user: dict) -> str:
-    return (
-        str(user["tz"])
-        if user is not None and "tz" in user
-        else PARTICIPANTS_NOTIFICATION_TIMEZONE
+    settings = settings_service.get_settings()
+    participants_notification_timezone = (
+        settings.participants_notification_timezone
+        if settings.participants_notification_timezone is not None
+        else "Europe/Amsterdam"
     )
+    if user is not None and "tz" in user:
+        return str(user["tz"])
+    return participants_notification_timezone
 
 
 def convert_time_string_to_utc_datetime(
@@ -1589,7 +1589,7 @@ def handle_confirm_train_participation(ack: Any, body: Any, client: Any) -> None
             slack_user_id=user_info["id"], is_participating=True
         )
     client.chat_postEphemeral(
-        channel=CHANNEL_NAME,
+        channel=settings_service.get_settings().channel_name,
         user=body["user"]["id"],
         text="You are participating!",
         blocks=create_select_times_message(),
@@ -1756,9 +1756,9 @@ def handle_leave_train(ack: Any, body: Any, client: Any) -> None:
 @app.action("time_select_all")
 def handle_time_select_all(ack: Any, body: Any, client: Any) -> None:
     global TIME_SELECTED_OPTIONS
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     for t in possible_times_service.get_possible_times():
         add_user_time_preferences(user_id=body["user"]["id"], time=t)
@@ -1779,9 +1779,9 @@ def handle_time_select_all(ack: Any, body: Any, client: Any) -> None:
 @app.action("time_unselect_all")
 def handle_time_unselect_all(ack: Any, body: Any, client: Any) -> None:
     global TIME_SELECTED_OPTIONS
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     TIME_SELECTED_OPTIONS = []
     for t in possible_times_service.get_possible_times():
@@ -1802,9 +1802,9 @@ def handle_time_unselect_all(ack: Any, body: Any, client: Any) -> None:
 @app.action("time_selection")
 def handle_time_selection(ack: Any, body: Any, client: Any) -> None:
     global TIME_SELECTED_OPTIONS
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if body is not None and "actions" in body:
         for action in body["actions"]:
@@ -1823,9 +1823,9 @@ def handle_time_selection(ack: Any, body: Any, client: Any) -> None:
 
 @app.action("confirm_time_selection")
 def handle_confirm_time(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if body is not None and "response_url" in body:
         requests.post(
@@ -1843,9 +1843,9 @@ def handle_confirm_time(ack: Any, body: Any, client: Any) -> None:
 @app.action("restaurants_select_all")
 def handle_restaurant_select_all(ack: Any, body: Any, client: Any) -> None:
     global RESTAURANTS_SELECTED_OPTIONS
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     for r in RESTAURANTS:
         add_user_restaurant_preferences(user_id=body["user"]["id"], restaurant=r)
@@ -1866,9 +1866,9 @@ def handle_restaurant_select_all(ack: Any, body: Any, client: Any) -> None:
 @app.action("restaurants_unselect_all")
 def handle_restaurant_unselect_all(ack: Any, body: Any, client: Any) -> None:
     global RESTAURANTS_SELECTED_OPTIONS
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     RESTAURANTS_SELECTED_OPTIONS = []
     for r in RESTAURANTS:
@@ -1889,9 +1889,9 @@ def handle_restaurant_unselect_all(ack: Any, body: Any, client: Any) -> None:
 @app.action("restaurants_selection")
 def handle_restaurant_selection(ack: Any, body: Any, client: Any) -> None:
     global RESTAURANTS_SELECTED_OPTIONS
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if body is not None and "actions" in body:
         for action in body["actions"]:
@@ -1912,9 +1912,9 @@ def handle_restaurant_selection(ack: Any, body: Any, client: Any) -> None:
 
 @app.action("confirm_restaurants_selection")
 def handle_confirm_restaurant(ack: Any, body: Any, client: Any) -> None:
-    global CLIENT
-    if CLIENT is None:
-        CLIENT = client
+    db_client = settings_service.get_client()
+    if db_client != client:
+        settings_service.update_client(client=client)
     ack()
     if body is not None and "response_url" in body:
         requests.post(
