@@ -25,6 +25,7 @@ from ultimate_lunch_manager.possible_times import (
     possible_times_service,
     possible_times_schema,
 )
+from ultimate_lunch_manager.settings import settings_service
 from ultimate_lunch_manager.users import users_service
 
 config = Config()
@@ -81,8 +82,6 @@ NOTIFICATION_DAYS_ALL_OPTIONS: List = [
 NOTIFICATION_DAYS_SELECTED_OPTIONS: List = []
 PARTICIPANTS_NOTIFICATION_TIME: str = "08:30"
 PARTICIPANTS_NOTIFICATION_TIMEZONE: str = "Europe/Amsterdam"
-COMPUTE_LUNCH_TIME: str = "11:30"
-COMPUTE_LUNCH_TIMEZONE: str = "Europe/Amsterdam"
 
 
 def create_times_config_message() -> List:
@@ -507,6 +506,12 @@ def create_participants_notification_config_message() -> List:
 
 
 def create_compute_lunch_notification_config_message() -> List:
+    opt_lunch_notification_time = (
+        settings_service.get_settings().lunch_notification_time
+    )
+    lunch_notification_time: str = (
+        opt_lunch_notification_time if opt_lunch_notification_time is not None else ""
+    )
     return [
         {
             "type": "header",
@@ -520,7 +525,7 @@ def create_compute_lunch_notification_config_message() -> List:
             "type": "input",
             "element": {
                 "type": "timepicker",
-                "initial_time": COMPUTE_LUNCH_TIME,
+                "initial_time": lunch_notification_time,
                 "placeholder": {
                     "type": "plain_text",
                     "text": "Select computation lunch notification time",
@@ -1462,7 +1467,6 @@ def handle_confirm_participants_notification_time(
 def handle_select_compute_notification_notification_time(
     ack: Any, body: Any, client: Any
 ) -> None:
-    global COMPUTE_LUNCH_TIME
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -1480,7 +1484,11 @@ def handle_select_compute_notification_notification_time(
                     continue
                 temp_inner_value_dict = body["state"]["values"][value][inner_value]
                 if "selected_time" in temp_inner_value_dict:
-                    COMPUTE_LUNCH_TIME = temp_inner_value_dict["selected_time"]
+                    settings = settings_service.get_settings()
+                    settings.lunch_notification_time = temp_inner_value_dict[
+                        "selected_time"
+                    ]
+                    settings_service.update_settings(settings=settings)
                     break
 
 
@@ -1488,7 +1496,6 @@ def handle_select_compute_notification_notification_time(
 def handle_confirm_compute_notification_notification_time(
     ack: Any, body: Any, client: Any
 ) -> None:
-    global COMPUTE_LUNCH_TIMEZONE
     global CLIENT
     if CLIENT is None:
         CLIENT = client
@@ -1513,9 +1520,11 @@ def handle_confirm_compute_notification_notification_time(
             channel=body["channel"]["id"],
             text=f"Bot has been configured in this channel by {user_name}",
         )
-        COMPUTE_LUNCH_TIMEZONE = get_timezone_from_user(
+        settings = settings_service.get_settings()
+        settings.compute_lunch_timezone = get_timezone_from_user(
             get_user_info_from_client(client=client, user_id=body["user"]["id"])
         )
+        settings_service.update_settings(settings=settings)
 
     notification_manager = NotificationManager(
         client=CLIENT,
@@ -1525,7 +1534,8 @@ def handle_confirm_compute_notification_notification_time(
             timezone=PARTICIPANTS_NOTIFICATION_TIMEZONE,
         ),
         compute_lunch_datetime=convert_time_string_to_utc_datetime(
-            time=COMPUTE_LUNCH_TIME, timezone=COMPUTE_LUNCH_TIMEZONE
+            time=settings_service.get_settings().lunch_notification_time,
+            timezone=settings_service.get_settings().compute_lunch_timezone,
         ),
         notification_weekdays=NOTIFICATION_DAYS,
     )
@@ -1540,7 +1550,14 @@ def get_timezone_from_user(user: dict) -> str:
     )
 
 
-def convert_time_string_to_utc_datetime(time: str, timezone: str) -> datetime.datetime:
+def convert_time_string_to_utc_datetime(
+    time: Optional[str],
+    timezone: Optional[str] = None,
+) -> datetime.datetime:
+    if timezone is None:
+        timezone = "Europe/Amsterdam"
+    if time is None:
+        time = "11:30"
     if not TIME_VALIDATION.match(time):
         raise ValueError("Invalid time string")
     utc_now = datetime.datetime.utcnow()
