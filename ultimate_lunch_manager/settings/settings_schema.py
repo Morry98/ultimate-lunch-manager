@@ -1,12 +1,11 @@
-from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel
 
 
 class SettingsBase(BaseModel):
-    participants_notification_time: Optional[datetime] = None
-    lunch_notification_time: Optional[datetime] = None
+    participants_notification_time: Optional[str] = None
+    lunch_notification_time: Optional[str] = None
     client: Optional[str] = None
     channel_id: Optional[str] = None
     channel_name: Optional[str] = None
