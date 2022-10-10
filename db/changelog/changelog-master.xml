@@ -117,7 +117,7 @@
 
     <changeSet author="Matteo Morando" id="8">
         <createTable tableName="settings">
-            <column autoIncrement="true" name="id_settings" type="BIGINT">
+            <column autoIncrement="true" name="id_setting" type="BIGINT">
                 <constraints primaryKey="true" primaryKeyName="settings_pkey"/>
             </column>
             <column name="participants_notification_time" type="VARCHAR(5)">
