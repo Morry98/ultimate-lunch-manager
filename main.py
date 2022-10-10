@@ -471,7 +471,7 @@ def create_participants_notification_config_message() -> List:
             "type": "input",
             "element": {
                 "type": "timepicker",
-                "initial_time": settings_service.get_settings().participants_notification_time,
+                "initial_time": settings_service.get_setting().participants_notification_time,
                 "placeholder": {
                     "type": "plain_text",
                     "text": "Select participants notification time",
@@ -501,9 +501,7 @@ def create_participants_notification_config_message() -> List:
 
 
 def create_compute_lunch_notification_config_message() -> List:
-    opt_lunch_notification_time = (
-        settings_service.get_settings().lunch_notification_time
-    )
+    opt_lunch_notification_time = settings_service.get_setting().lunch_notification_time
     lunch_notification_time: str = (
         opt_lunch_notification_time if opt_lunch_notification_time is not None else ""
     )
@@ -551,26 +549,26 @@ def create_compute_lunch_notification_config_message() -> List:
 
 @app.command("/start_lunch_manager")
 def repeat_text(ack: Any, respond: Any, command: Any) -> None:
-    settings = settings_service.get_settings()
+    setting = settings_service.get_setting()
     ack()
-    if settings.channel_id is None:
-        settings.channel_id = command["channel_id"]
-        settings.channel_name = command["channel_name"]
-        settings_service.update_settings(settings=settings)
+    if setting.channel_id is None:
+        setting.channel_id = command["channel_id"]
+        setting.channel_name = command["channel_name"]
+        settings_service.update_setting(setting=setting)
         user_name = command["user_name"]
         respond(
             text=f"Bot is started in this channel by {user_name}",
             response_type="in_channel",
         )
         respond(blocks=create_times_config_message(), response_type="ephemeral")
-    elif settings.channel_id == command["channel_id"]:
+    elif setting.channel_id == command["channel_id"]:
         respond(
             text="Already running in this channel!\nIf you want to stop use /stop",
             response_type="ephemeral",
         )
     else:
         respond(
-            text=f"Already running in another channel: {settings.channel_name}\nIf you want to move it use /stop",
+            text=f"Already running in another channel: {setting.channel_name}\nIf you want to move it use /stop",
             response_type="ephemeral",
         )
 
@@ -1426,11 +1424,11 @@ def handle_select_participants_notification_time(
                     continue
                 temp_inner_value_dict = body["state"]["values"][value][inner_value]
                 if "selected_time" in temp_inner_value_dict:
-                    settings = settings_service.get_settings()
-                    settings.participants_notification_time = temp_inner_value_dict[
+                    setting = settings_service.get_setting()
+                    setting.participants_notification_time = temp_inner_value_dict[
                         "selected_time"
                     ]
-                    settings_service.update_settings(settings=settings)
+                    settings_service.update_setting(setting=setting)
                     break
 
 
@@ -1439,7 +1437,7 @@ def handle_confirm_participants_notification_time(
     ack: Any, body: Any, client: Any
 ) -> None:
     db_client = settings_service.get_client()
-    settings = settings_service.get_settings()
+    setting = settings_service.get_setting()
     if db_client != client:
         settings_service.update_client(client=client)
     ack()
@@ -1454,7 +1452,7 @@ def handle_confirm_participants_notification_time(
         ),
     )
     if body is not None and "user" in body and "id" in body["user"]:
-        settings.participants_notification_timezone = get_timezone_from_user(
+        setting.participants_notification_timezone = get_timezone_from_user(
             get_user_info_from_client(client=client, user_id=body["user"]["id"])
         )
 
@@ -1480,11 +1478,11 @@ def handle_select_compute_notification_notification_time(
                     continue
                 temp_inner_value_dict = body["state"]["values"][value][inner_value]
                 if "selected_time" in temp_inner_value_dict:
-                    settings = settings_service.get_settings()
-                    settings.lunch_notification_time = temp_inner_value_dict[
+                    setting = settings_service.get_setting()
+                    setting.lunch_notification_time = temp_inner_value_dict[
                         "selected_time"
                     ]
-                    settings_service.update_settings(settings=settings)
+                    settings_service.update_setting(setting=setting)
                     break
 
 
@@ -1493,7 +1491,7 @@ def handle_confirm_compute_notification_notification_time(
     ack: Any, body: Any, client: Any
 ) -> None:
     db_client = settings_service.get_client()
-    settings = settings_service.get_settings()
+    setting = settings_service.get_setting()
     if db_client != client:
         settings_service.update_client(client=client)
     ack()
@@ -1517,21 +1515,21 @@ def handle_confirm_compute_notification_notification_time(
             channel=body["channel"]["id"],
             text=f"Bot has been configured in this channel by {user_name}",
         )
-        settings.compute_lunch_timezone = get_timezone_from_user(
+        setting.compute_lunch_timezone = get_timezone_from_user(
             get_user_info_from_client(client=client, user_id=body["user"]["id"])
         )
-        settings_service.update_settings(settings=settings)
+        settings_service.update_setting(setting=setting)
 
     notification_manager = NotificationManager(
         client=settings_service.get_client(),
-        channel_name=settings.channel_name,
+        channel_name=setting.channel_name,
         participants_notification_datetime=convert_time_string_to_utc_datetime(
-            time=settings.participants_notification_time,
-            timezone=settings.participants_notification_timezone,
+            time=setting.participants_notification_time,
+            timezone=setting.participants_notification_timezone,
         ),
         compute_lunch_datetime=convert_time_string_to_utc_datetime(
-            time=settings_service.get_settings().lunch_notification_time,
-            timezone=settings_service.get_settings().compute_lunch_timezone,
+            time=settings_service.get_setting().lunch_notification_time,
+            timezone=settings_service.get_setting().compute_lunch_timezone,
         ),
         notification_weekdays=NOTIFICATION_DAYS,
     )
@@ -1539,10 +1537,10 @@ def handle_confirm_compute_notification_notification_time(
 
 
 def get_timezone_from_user(user: dict) -> str:
-    settings = settings_service.get_settings()
+    setting = settings_service.get_setting()
     participants_notification_timezone = (
-        settings.participants_notification_timezone
-        if settings.participants_notification_timezone is not None
+        setting.participants_notification_timezone
+        if setting.participants_notification_timezone is not None
         else "Europe/Amsterdam"
     )
     if user is not None and "tz" in user:
@@ -1589,7 +1587,7 @@ def handle_confirm_train_participation(ack: Any, body: Any, client: Any) -> None
             slack_user_id=user_info["id"], is_participating=True
         )
     client.chat_postEphemeral(
-        channel=settings_service.get_settings().channel_name,
+        channel=settings_service.get_setting().channel_name,
         user=body["user"]["id"],
         text="You are participating!",
         blocks=create_select_times_message(),

@@ -50,7 +50,8 @@ def get_users(
     query = query.offset(skip)
     if limit is not None:
         query = query.limit(limit)
-    return query.all()  # type: ignore
+    result: List[users_model.Users] = query.all()
+    return result
 
 
 def set_user_participating(

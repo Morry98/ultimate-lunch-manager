@@ -10,7 +10,7 @@ CACHED_FUNCTION: List[Callable] = [
     possible_times_service.get_time_all_options,
     possible_times_service.get_possible_times,
     users_service.get_users,
-    settings_service.get_settings,
+    settings_service.get_setting,
     settings_service.get_client,
 ]
 

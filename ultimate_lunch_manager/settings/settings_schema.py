@@ -14,7 +14,7 @@ class SettingsBase(BaseModel):
 
 
 class Settings(SettingsBase):
-    id_settings: int
+    id_setting: int
 
     class Config:
         orm_mode = True
