@@ -54,7 +54,7 @@ def get_restaurants(
 
 
 def create_restaurant(
-    restaurant: restaurants_schema.Restaurants,
+    restaurant: restaurants_schema.RestaurantsBase,
 ) -> restaurants_schema.Restaurants:
     """Create restaurants in database.
 
@@ -77,13 +77,13 @@ def create_restaurant(
 
 def update_restaurant(
     id_restaurant: int,
-    restaurant: restaurants_schema.Restaurants,
+    restaurant: restaurants_schema.RestaurantsBase,
 ) -> restaurants_schema.Restaurants:
     """Update restaurant in database.
 
     Args:
         id_restaurant (int): id_restaurant
-        restaurant (Restaurants): restaurant
+        restaurant (RestaurantBase): restaurant
 
     Returns:
         Restaurants: restaurant
@@ -150,3 +150,39 @@ def get_restaurants_all_options() -> List[Dict[str, Any]]:
         )
     all_restaurants_options = sorted(all_restaurants_options, key=lambda k: k["value"])  # type: ignore
     return all_restaurants_options
+
+
+@ttl_cache(maxsize=128, ttl=60)
+def get_restaurants_names(
+    id_restaurant: Optional[int] = None,
+    name: Optional[str] = None,
+    priority: Optional[int] = None,
+    start_creation_date_utc: Optional[datetime.datetime] = None,
+    end_creation_date_utc: Optional[datetime.datetime] = None,
+    skip: int = 0,
+    limit: Optional[int] = None,
+) -> List[str]:
+    """Get restaurants names from database.
+
+    Args:
+        id_restaurant (Optional[int], optional): id_restaurant. Defaults to None.
+        name (Optional[str], optional): name. Defaults to None.
+        priority (Optional[int], optional): priority. Defaults to None.
+        start_creation_date_utc (Optional[datetime], optional): start_creation_date_utc. Defaults to None.
+        end_creation_date_utc (Optional[datetime], optional): end_creation_date_utc. Defaults to None.
+        skip (int, optional): skip. Defaults to 0.
+        limit (Optional[int], optional): limit. Defaults to None.
+
+    Returns:
+        List[str]: List of restaurants names
+    """
+    restaurants = get_restaurants(
+        id_restaurant=id_restaurant,
+        name=name,
+        priority=priority,
+        start_creation_date_utc=start_creation_date_utc,
+        end_creation_date_utc=end_creation_date_utc,
+        skip=skip,
+        limit=limit,
+    )
+    return [restaurant.name for restaurant in restaurants]
