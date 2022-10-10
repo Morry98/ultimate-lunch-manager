@@ -25,6 +25,7 @@ from ultimate_lunch_manager.possible_times import (
     possible_times_service,
     possible_times_schema,
 )
+from ultimate_lunch_manager.restaurants import restaurants_service, restaurants_schema
 from ultimate_lunch_manager.settings import settings_service
 from ultimate_lunch_manager.users import users_service
 
@@ -39,10 +40,6 @@ app = App(token=config.SLACK_APP_TOKEN, name="The Ultimate Lunch Manager")
 TIME_SELECTED_OPTIONS: List = []
 SELECTED_TIME_TO_ADD: Dict = {}  # {user: time}
 SELECTED_TIME_TO_DELETE: Dict = {}  # {user: time}
-RESTAURANTS: List = ["", "Nonna"]
-RESTAURANTS_ALL_OPTIONS: List[Dict] = [
-    {"text": {"type": "plain_text", "text": "Nonna", "emoji": True}, "value": "Nonna"},
-]
 RESTAURANTS_SELECTED_OPTIONS: List = []
 SELECTED_RESTAURANT_TO_DELETE: Dict = {}  # {user: restaurant}
 NOTIFICATION_DAYS: List = []
@@ -146,7 +143,7 @@ def create_times_config_message() -> List:
 
 
 def create_restaurants_config_message() -> List:
-    restaurant_list = "\n- ".join(RESTAURANTS)
+    restaurant_list = "\n- ".join(restaurants_service.get_restaurants_names())
     return [
         {
             "type": "header",
@@ -339,14 +336,14 @@ def create_select_restaurant_message() -> List:
     if len(RESTAURANTS_SELECTED_OPTIONS) > 0:
         checkbox_elements = {
             "type": "checkboxes",
-            "options": RESTAURANTS_ALL_OPTIONS,
+            "options": restaurants_service.get_restaurants_all_options(),
             "initial_options": RESTAURANTS_SELECTED_OPTIONS,
             "action_id": "restaurants_selection",
         }
     else:
         checkbox_elements = {
             "type": "checkboxes",
-            "options": RESTAURANTS_ALL_OPTIONS,
+            "options": restaurants_service.get_restaurants_all_options(),
             "action_id": "restaurants_selection",
         }
     return [
@@ -1037,20 +1034,15 @@ def handle_confirm_restaurant_insertion(ack: Any, body: Any, client: Any) -> Non
                 temp_inner_value_dict = body["state"]["values"][value][inner_value]
                 if "value" in temp_inner_value_dict:
                     selected_restaurant = temp_inner_value_dict["value"]
-                    if selected_restaurant not in RESTAURANTS:
-                        RESTAURANTS_ALL_OPTIONS.append(
-                            {
-                                "text": {
-                                    "type": "plain_text",
-                                    "text": selected_restaurant,
-                                    "emoji": True,
-                                },
-                                "value": selected_restaurant,
-                            }
+                    if (
+                        selected_restaurant
+                        not in restaurants_service.get_restaurants_names()
+                    ):
+                        restaurants_service.create_restaurant(
+                            restaurant=restaurants_schema.RestaurantsBase(
+                                name=selected_restaurant
+                            )
                         )
-                        RESTAURANTS_ALL_OPTIONS.sort(key=lambda x: x["text"]["text"])  # type: ignore
-                        RESTAURANTS.append(selected_restaurant)
-                        RESTAURANTS.sort()
                     break
 
     requests.post(
@@ -1093,7 +1085,7 @@ def handle_delete_restaurant(ack: Any, body: Any, client: Any) -> None:
     ack()
     if body is not None and "response_url" in body:
         options = []
-        for restaurant in RESTAURANTS:
+        for restaurant in restaurants_service.get_restaurants_names():
             if restaurant == "":
                 continue
             options.append(
@@ -1212,13 +1204,10 @@ def handle_confirm_restaurant_deletion(ack: Any, body: Any, client: Any) -> None
         and body["user"]["id"] in SELECTED_RESTAURANT_TO_DELETE
     ):
         selected_restaurant = SELECTED_RESTAURANT_TO_DELETE.pop(body["user"]["id"])
-        if selected_restaurant in RESTAURANTS:
-            RESTAURANTS.remove(selected_restaurant)
-            # remove selected_restaurant from RESTAURANTS_ALL_OPTIONS where text: text = selected_restaurant
-            for i in range(len(RESTAURANTS_ALL_OPTIONS)):
-                if RESTAURANTS_ALL_OPTIONS[i]["text"]["text"] == selected_restaurant:
-                    RESTAURANTS_ALL_OPTIONS.pop(i)
-                    break
+        if selected_restaurant in restaurants_service.get_restaurants_names():
+            restaurants_service.delete_restaurants(
+                name=selected_restaurant,
+            )
         requests.post(
             url=body["response_url"],
             headers={"Content-Type": "application/json"},
@@ -1279,7 +1268,6 @@ def handle_confirm_restaurants(ack: Any, body: Any, client: Any) -> None:
 
 @app.action("delete_all_restaurants")
 def handle_delete_all_restaurants(ack: Any, body: Any, client: Any) -> None:
-    global RESTAURANTS
     db_client = settings_service.get_client()
     if db_client != client:
         settings_service.update_client(client=client)
@@ -1292,8 +1280,12 @@ def handle_delete_all_restaurants(ack: Any, body: Any, client: Any) -> None:
             and body["user"]["id"] in SELECTED_RESTAURANT_TO_DELETE
         ):
             _ = SELECTED_RESTAURANT_TO_DELETE.pop(body["user"]["id"])
-        RESTAURANTS.clear()
-        RESTAURANTS = [""]
+        restaurants_service.delete_restaurants()
+        restaurants_service.create_restaurant(
+            restaurant=restaurants_schema.RestaurantsBase(
+                name="",
+            )
+        )
         SELECTED_RESTAURANT_TO_DELETE.clear()
         requests.post(
             url=body["response_url"],
@@ -1845,9 +1837,9 @@ def handle_restaurant_select_all(ack: Any, body: Any, client: Any) -> None:
     if db_client != client:
         settings_service.update_client(client=client)
     ack()
-    for r in RESTAURANTS:
+    for r in restaurants_service.get_restaurants_names():
         add_user_restaurant_preferences(user_id=body["user"]["id"], restaurant=r)
-    RESTAURANTS_SELECTED_OPTIONS = RESTAURANTS_ALL_OPTIONS.copy()
+    RESTAURANTS_SELECTED_OPTIONS = restaurants_service.get_restaurants_all_options()
     if body is not None and "response_url" in body:
         requests.post(
             url=body["response_url"],
@@ -1869,7 +1861,7 @@ def handle_restaurant_unselect_all(ack: Any, body: Any, client: Any) -> None:
         settings_service.update_client(client=client)
     ack()
     RESTAURANTS_SELECTED_OPTIONS = []
-    for r in RESTAURANTS:
+    for r in restaurants_service.get_restaurants_names():
         remove_user_restaurant_preferences(user_id=body["user"]["id"], restaurant=r)
     if body is not None and "response_url" in body:
         requests.post(
