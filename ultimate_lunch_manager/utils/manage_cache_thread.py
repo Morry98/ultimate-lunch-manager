@@ -3,6 +3,7 @@ from time import sleep
 from typing import List, Callable
 
 from ultimate_lunch_manager.possible_times import possible_times_service
+from ultimate_lunch_manager.restaurants import restaurants_service
 from ultimate_lunch_manager.settings import settings_service
 from ultimate_lunch_manager.users import users_service
 
@@ -12,6 +13,9 @@ CACHED_FUNCTION: List[Callable] = [
     users_service.get_users,
     settings_service.get_setting,
     settings_service.get_client,
+    restaurants_service.get_restaurants_names,
+    restaurants_service.get_restaurants_all_options,
+    restaurants_service.get_restaurants,
 ]
 
 
